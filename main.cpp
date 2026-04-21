@@ -84,6 +84,8 @@ int main() {
     unsigned long frames = 0;
     unsigned int start = SDL_GetTicks();
 
+    Image* texture = generateTexture(RGB565(255, 0, 0), RGB565(0, 255, 0));
+
 
     while (!quit) {
         SDL_Event ev;
@@ -106,15 +108,24 @@ int main() {
 
         lock(screen);
         int totalTris = 100;
-        for(int i = 0; i < 100; i++) {
-            GouraudTrianglePoint trianglePoint[3] = {
-                    { 100 + i, 50,  RGB565(255, 0, 0) },
-                    {  20 + i, 100, RGB565(0, 255, 0) },
-                    { 300 + i, 500, RGB565(0, 0, 255) }
+//        for(int i = 0; i < 100; i++) {
+//            GouraudTrianglePoint trianglePoint[3] = {
+//                    { 100 + i, 50,  RGB565(255, 0, 0) },
+//                    {  20 + i, 100, RGB565(0, 255, 0) },
+//                    { 300 + i, 500, RGB565(0, 0, 255) }
+//            };
+//
+//            screen.image->drawGouraudTriangle(trianglePoint, sizeof(GouraudTrianglePoint ));
+//        }
+
+        for(int i = 0; i < 1; i++) {
+            TexTrianglePoint trianglePoint[3] = {
+                    { 100 + i, 50,  0.0f, 0.0f },
+                    {  20 + i, 100, 0.0f, 1.0f, },
+                    { 300 + i, 500, 1.0f, 1.0f }
             };
 
-
-            screen.image->drawGouraudTriangle(trianglePoint, sizeof(GouraudTrianglePoint ));
+            screen.image->drawTexTriangle(texture, trianglePoint, sizeof(TexTrianglePoint ));
         }
 
         unlock(screen);

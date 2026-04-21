@@ -20,7 +20,7 @@ typedef struct {
 
 typedef struct {
     int32_t x,y;
-    uint16_t u,v;
+    float u,v;
 } TexTrianglePoint;
 
 #pragma pack(pop)
@@ -41,10 +41,13 @@ public:
 
     void hLineFlat(int x1, int y, int x2, uint16_t color);
     void hLineGouraud(int x1, int y, int x2, int_fast32_t* lColor, int_fast32_t* rColor);
+    void hLineTex(Image* texture, int x1, int y, int x2, int_fast32_t* cord1, int_fast32_t* cord2);
 
     void drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color);
     void drawGouraudTriangle(GouraudTrianglePoint* points, uint32_t pointSize);
-    void drawTexTriangle(TexTrianglePoint* points, uint32_t pointSize);
+    void drawTexTriangle(Image* texture, TexTrianglePoint* points, uint32_t pointSize);
+
+    void fillTexture(uint16_t col1, uint16_t col2);
 
     ~Image();
 private:
@@ -55,5 +58,6 @@ private:
 };
 
 #define RGB565(r, g, b) ((uint16_t)(((r & 0xF8) << 8)  + ((g & 0xFC) << 3) + (b >> 3)))
+Image *generateTexture(uint16_t col1, uint16_t col2);
 
 #endif //SOFTWARERENDERBASIC_IMAGE_H

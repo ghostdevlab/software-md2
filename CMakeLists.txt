@@ -21,5 +21,5 @@ add_executable(md2
         Q2Model.cpp
         main.cpp)
 
-target_link_libraries(md2 ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} -lSDL2_image)
-#target_link_libraries(md2 ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} SDL2_image::SDL2_image)
+#target_link_libraries(md2 ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} -lSDL2_image)
+target_link_libraries(md2 ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} SDL2_image::SDL2_image)
