@@ -83,6 +83,12 @@ void getTModel(Q2Model& src, TQ2ModelFrame & out, int srcFrame, int dstFrame, fl
     TMD2Frame& sFrame = src.frames[srcFrame];
     TMD2Frame& dFrame = src.frames[dstFrame];
 
+    static int lastFrame = -1;
+    if (lastFrame != srcFrame) {
+        printf("frame id %d %s\n", srcFrame, sFrame.name);
+        lastFrame = srcFrame;
+    }
+
     for (int i = 0; i<src.vertCount; i++) {
         float x = (((float) sFrame.verts[i].v[0]) * sFrame.scale[0] + sFrame.translate[0]) * (1.0f - progress) +
                   (((float) dFrame.verts[i].v[0]) * dFrame.scale[0] + dFrame.translate[0]) * progress;

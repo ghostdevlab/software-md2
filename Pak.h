@@ -22,10 +22,15 @@ typedef struct {
     uint32_t size;
 } PakFileMeta;
 
+typedef struct {
+    uint8_t *data;
+    uint32_t size;
+} WavFile;
+
 #pragma pack(pop)
 
 void dumpFileList(char *path);
-
 TQ2Model* loadModel(char *pakFilePath, char* fileName);
+WavFile* loadWav(char *pakFilePath, char* fileName);
 
 #endif //MD2_PAK_H

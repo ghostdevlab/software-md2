@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include "Pak.h"
 
 void dumpFileList(char *path) {
@@ -55,6 +56,42 @@ TQ2Model* loadModel(char *pakFilePath, char* fileName) {
 
     if (modelMeta != nullptr) {
         out = openFile(f, modelMeta->offset);
+    }
+
+    delete[] list;
+
+    return out;
+}
+
+WavFile* loadWav(char *pakFilePath, char* fileName) {
+    FILE* f = fopen(pakFilePath, "rb");
+
+    PakHeader header;
+    fread(&header, sizeof(PakHeader), 1, f);
+    int fileCount = header.size / sizeof(PakFileMeta);
+
+    PakFileMeta *list = new PakFileMeta[fileCount];
+    fseek(f, header.offset, SEEK_SET);
+    fread(list, sizeof(PakFileMeta), fileCount, f);
+
+    WavFile * out = nullptr;
+
+    PakFileMeta *modelMeta = nullptr;
+
+    for(int i = 0; i<fileCount && modelMeta == nullptr; i++) {
+        if (strcmp(list[i].name, fileName) == 0) {
+            modelMeta = list + i;
+        }
+    }
+
+    if (modelMeta != nullptr) {
+        out = (WavFile*)malloc(sizeof(WavFile));
+        out->size = modelMeta->size;
+        out->data = (uint8_t*)malloc(modelMeta->size);
+        fseek(f, modelMeta->offset, SEEK_SET);
+        fread(out->data, out->size, 1, f);
+    } else {
+        printf("NOT FOUND\n");
     }
 
     delete[] list;

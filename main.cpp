@@ -1,5 +1,6 @@
 #include <iostream>
 #include <SDL.h>
+#include <map>
 #include "Image.h"
 #include "Pak.h"
 #include "Matrix.h"
@@ -23,7 +24,7 @@ void toggleFullscreen(SDL_Window* Window) {
 }
 
 void createWindow(TScreen& out, int width, int height, int fullscreen) {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     out.window = SDL_CreateWindow("SDL pixels",
                                   SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED,
@@ -66,12 +67,59 @@ void clear(TScreen& screen) {
 #undef main
 #endif
 
+// Klucz to unikalna kombinacja freq/format/channels
+std::map<uint32_t, SDL_AudioDeviceID> audioDevices;
+
+void play(WavFile* wavFile) {
+    SDL_AudioSpec wavSpec;
+    Uint8 *wavBuffer;
+    Uint32 wavLength;
+
+    if (SDL_LoadWAV_RW(SDL_RWFromMem(wavFile->data, wavFile->size), 1, &wavSpec, &wavBuffer, &wavLength)) {
+        // Tworzymy prosty klucz (np. freq | format << 16)
+        uint32_t key = wavSpec.freq ^ wavSpec.format ^ wavSpec.channels;
+
+        if (audioDevices.find(key) == audioDevices.end()) {
+            // Pierwszy raz widzimy ten format - otwieramy nowe urządzenie
+            audioDevices[key] = SDL_OpenAudioDevice(NULL, 0, &wavSpec, NULL, 0);
+            SDL_PauseAudioDevice(audioDevices[key], 0);
+        }
+
+        SDL_QueueAudio(audioDevices[key], wavBuffer, wavLength);
+
+        // Pamiętaj: SDL_FreeWAV można wywołać dopiero gdy dźwięk skończy grać,
+        // albo trzymać bufory w cache (mapie) razem z deviceId.
+    }
+}
+
+char *gunnerSounds[10] = {
+        "sound/gunner/death1.wav",
+        "sound/gunner/Gunatck1.wav",
+        "sound/gunner/Gunatck2.wav",
+        "sound/gunner/Gunatck3.wav",
+        "sound/gunner/Gunidle1.wav",
+        "sound/gunner/gunpain1.wav",
+        "sound/gunner/Gunpain2.wav",
+        "sound/gunner/Gunsrch1.wav",
+        "sound/gunner/sight1.wav",
+        nullptr
+};
+
+WavFile* sounds[10];
+
 int main() {
-//    dumpFileList("assets/pak0.pak");
+    dumpFileList("assets/pak0.pak");
     TQ2Model* model = loadModel("assets/pak0.pak", "models/monsters/gunner/tris.md2");
 
     TQ2ModelFrame* modelFrame = allocateFrame(model);
     TQ2ModelFrame* modelProjectedFrame = allocateFrame(model);
+
+    int index = 0;
+    while(gunnerSounds[index]) {
+        sounds[index] = loadWav("assets/pak0.pak", gunnerSounds[index]);
+        index++;
+    }
+    sounds[index] = nullptr;
 
     TScreen screen;
 #ifdef DEBUG
@@ -97,11 +145,19 @@ int main() {
     int modelProgress = 0;
     int speed = 30;
 
+    int soundIndex = 0;
+
     while (!quit) {
         SDL_Event ev;
         while (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE) {
                 quit = true;
+            }
+
+            if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_1) {
+                printf("sound %d\n", soundIndex);
+                play(sounds[soundIndex++]);
+                if (sounds[soundIndex] == nullptr) soundIndex = 0;
             }
 
 //            handleKeyEvents(ev);
@@ -161,27 +217,6 @@ int main() {
 //            screen.image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
         }
 
-        int totalTris = 100;
-//        for(int i = 0; i < 100; i++) {
-//            GouraudTrianglePoint trianglePoint[3] = {
-//                    { 100 + i, 50,  RGB565(255, 0, 0) },
-//                    {  20 + i, 100, RGB565(0, 255, 0) },
-//                    { 300 + i, 500, RGB565(0, 0, 255) }
-//            };
-//
-//            screen.image->drawGouraudTriangle(trianglePoint, sizeof(GouraudTrianglePoint ));
-//        }
-
-        for(int i = 0; i < 1; i++) {
-            TexTrianglePoint trianglePoint[3] = {
-                    { 100 + i, 50,  0.0f, 0.0f },
-                    {  20 + i, 100, 0.0f, 1.0f, },
-                    { 300 + i, 500, 1.0f, 1.0f }
-            };
-//            screen.image->drawTexTriangle(texture, trianglePoint, sizeof(TexTrianglePoint ));
-//            screen.image->drawWireframeTriangle((WireframePoint*)trianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
-        }
-
         unlock(screen);
 
         // copy to window
@@ -191,10 +226,10 @@ int main() {
 
         char str[256];
 
-        sprintf(str, "FPS: %5.2lf, tris %d", (1000.0 * frames / (SDL_GetTicks() - start)), totalTris);
+        sprintf(str, "FPS: %5.2lf, tris %d", (1000.0 * frames / (SDL_GetTicks() - start)), modelFrame->trisCount);
 
-        if (*str && (frames % 100) == 0) {
-            std::cout<<str<<std::endl;
+        if (*str && (frames % 200) == 0) {
+//            std::cout<<str<<std::endl;
         }
 
     }
