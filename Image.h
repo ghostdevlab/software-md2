@@ -55,10 +55,10 @@ public:
     void fillTexture(uint16_t col1, uint16_t col2);
 
     ~Image();
-private:
+
     const int32_t width;
     const int32_t height;
-    const uint16_t *buffer;
+    uint16_t *buffer;
     const int bufferOwner;
 };
 

@@ -200,7 +200,8 @@ int main() {
     unsigned long frames = 0;
     unsigned int start = SDL_GetTicks();
 
-    Image* texture = generateTexture(RGB565(255, 0, 0), RGB565(0, 0, 255));
+//    Image* texture = generateTexture(RGB565(255, 0, 0), RGB565(0, 0, 255));
+    Image* texture = loadPCX("assets/pak0.pak", "models/monsters/gunner/skin.pcx");
 
     int modelProgress = 0;
     int speed = 30;
@@ -216,7 +217,8 @@ int main() {
 
             if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_1) {
                 printf("sound %d\n", soundIndex);
-                play(sounds[soundIndex++]);
+                for(int j = 0; j<5; j++) play(sounds[soundIndex]);
+                soundIndex++;
                 if (sounds[soundIndex] == nullptr) soundIndex = 0;
             }
 
