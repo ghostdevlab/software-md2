@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include "Image.h"
 #include "Pak.h"
+#include "Matrix.h"
 
 typedef struct Screen {
     SDL_Window *window;
@@ -70,8 +71,7 @@ int main() {
     TQ2Model* model = loadModel("assets/pak0.pak", "models/monsters/gunner/tris.md2");
 
     TQ2ModelFrame* modelFrame = allocateFrame(model);
-
-    getTModel(*model, *modelFrame, 0, 1, 0.5f);
+    TQ2ModelFrame* modelProjectedFrame = allocateFrame(model);
 
     TScreen screen;
 #ifdef DEBUG
@@ -92,8 +92,10 @@ int main() {
     unsigned long frames = 0;
     unsigned int start = SDL_GetTicks();
 
-    Image* texture = generateTexture(RGB565(255, 0, 0), RGB565(0, 255, 0));
+    Image* texture = generateTexture(RGB565(255, 0, 0), RGB565(0, 0, 255));
 
+    int modelProgress = 0;
+    int speed = 30;
 
     while (!quit) {
         SDL_Event ev;
@@ -115,6 +117,50 @@ int main() {
         frames++;
 
         lock(screen);
+
+        clear(screen);
+        modelProgress++;
+//        modelProgress = 200;
+        modelProgress = modelProgress % (model->frameCount * speed);
+        int modelCurrentFrame = (modelProgress/speed);
+        int modelNextFrame = (modelCurrentFrame + 1) % model->frameCount;
+        getTModel(*model, *modelFrame, modelCurrentFrame, modelNextFrame, (float)(modelProgress % speed) / speed);
+        Matrix projection, shift, scale, rotY;
+        projection.basicProjection(256, screen.w, screen.h);
+        scale.setScale(0.3f);
+        rotY.setRotationY(4 * 3.14/5);
+        shift.setTransform(0, 0, 15);
+
+        Matrix composition = projection * shift * scale * rotY;
+        composition.mul(
+                (float*)modelFrame->vertexes,
+                (float*)modelProjectedFrame->vertexes,
+                modelFrame->vertCount,
+                6);
+
+        for(int i = 0; i<modelFrame->trisCount; i++) {
+            TexTrianglePoint texTrianglePoint[3] = {
+                    {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                            modelProjectedFrame->vertexes[i * 3 + 0].u, modelProjectedFrame->vertexes[i * 3 + 0].v
+                    },
+                    {
+                            (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                            (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                            modelProjectedFrame->vertexes[i * 3 + 1].u, modelProjectedFrame->vertexes[i * 3 + 1].v
+                    },
+                    {
+                            (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                            (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                            modelProjectedFrame->vertexes[i * 3 + 2].u, modelProjectedFrame->vertexes[i * 3 + 2].v
+                    }
+
+            };
+            screen.image->drawTexTriangle(texture, texTrianglePoint, sizeof(TexTrianglePoint));
+//            screen.image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
+        }
+
         int totalTris = 100;
 //        for(int i = 0; i < 100; i++) {
 //            GouraudTrianglePoint trianglePoint[3] = {

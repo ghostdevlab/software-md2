@@ -4,6 +4,7 @@
 
 #include "Matrix.h"
 #include <cmath>
+#include <cstring>
 
 Matrix::Matrix() {
     setIdentity();
@@ -43,12 +44,15 @@ void Matrix::flatProjection(float dist, int width, int height) {
 }
 
 
-void Matrix::mul(float *in, float *out, int vectCount) {
+void Matrix::mul(float *in, float *out, int vectCount, int vertSize) {
     for(int i = 0; i<vectCount; i++) {
-        out[i * 4 + 0] = data[0] * in[i*4 + 0] + data[1] * in[i*4 + 1] + data[2] * in[i*4 + 2] + data[3] * in[i*4 + 3];
-        out[i * 4 + 1] = data[4] * in[i*4 + 0] + data[5] * in[i*4 + 1] + data[6] * in[i*4 + 2] + data[7] * in[i*4 + 3];
-        out[i * 4 + 2] = data[8] * in[i*4 + 0] + data[9] * in[i*4 + 1] + data[10] * in[i*4 + 2] + data[11] * in[i*4 + 3];
-        out[i * 4 + 3] = data[12] * in[i*4 + 0] + data[13] * in[i*4 + 1] + data[14] * in[i*4 + 2] + data[15] * in[i*4 + 3];
+        out[i * vertSize + 0] = data[0]  * in[i * vertSize + 0] + data[1]  * in[i * vertSize + 1] + data[2]  * in[i * vertSize + 2] + data[3]  * in[i * vertSize + 3];
+        out[i * vertSize + 1] = data[4]  * in[i * vertSize + 0] + data[5]  * in[i * vertSize + 1] + data[6]  * in[i * vertSize + 2] + data[7]  * in[i * vertSize + 3];
+        out[i * vertSize + 2] = data[8]  * in[i * vertSize + 0] + data[9]  * in[i * vertSize + 1] + data[10] * in[i * vertSize + 2] + data[11] * in[i * vertSize + 3];
+        out[i * vertSize + 3] = data[12] * in[i * vertSize + 0] + data[13] * in[i * vertSize + 1] + data[14] * in[i * vertSize + 2] + data[15] * in[i * vertSize + 3];
+        if (vertSize > 4) {
+            memcpy(out + i * vertSize + 4, in + i * vertSize + 4, (vertSize - 4) * sizeof(float));
+        }
     }
 }
 

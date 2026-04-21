@@ -14,7 +14,7 @@ public:
     void basicProjection(float dist, int width, int height);
     void flatProjection(float dist, int width, int height);
 
-    void mul(float *in, float *out, int vectCount);
+    void mul(float *in, float *out, int vectCount, int vertSize);
 
     Matrix operator*(const Matrix& other) const;
 

@@ -487,6 +487,8 @@ void Image::hLineTex(Image* texture, int x1, int y, int x2, int_fast32_t* cord1,
 //        return;
 //    }
 
+    if (x2 < x1) return;
+
     int w = (x2 - x1 + 1);
 
     int_fast32_t dc[2] = {
@@ -659,6 +661,7 @@ void Image::drawTexTriangle(Image* texture, TexTrianglePoint *points, uint32_t p
 
         if (lx > rx) {
             swap(lx, rx);
+            swap(dx1, dx2);
             swap(ptr_dc1, ptr_dc2);
         }
 

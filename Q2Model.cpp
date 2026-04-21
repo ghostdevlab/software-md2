@@ -92,7 +92,7 @@ void getTModel(Q2Model& src, TQ2ModelFrame & out, int srcFrame, int dstFrame, fl
                   (((float) dFrame.verts[i].v[2]) * dFrame.scale[2] + dFrame.translate[2]) * progress;
 
         out.rawBuf[i * 4 + 0] = y;
-        out.rawBuf[i * 4 + 1] = -z;
+        out.rawBuf[i * 4 + 1] = z;
         out.rawBuf[i * 4 + 2] = x;
         out.rawBuf[i * 4 + 3] = 1.0f;
     }
