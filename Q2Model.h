@@ -9,6 +9,7 @@
 #pragma pack(push, 1)
 
 #include <cstdio>
+#include <stdint.h>
 
 typedef struct Q2Header {
     int ident;                  /* magic number: "IDP2" */

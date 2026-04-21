@@ -5,6 +5,7 @@
 #include "Pak.h"
 #include "Matrix.h"
 #include "Q2Anim.h"
+#include "Enemy.h"
 
 typedef struct Screen {
     SDL_Window *window;
@@ -108,71 +109,12 @@ char *gunnerSounds[10] = {
 
 WavFile* sounds[10];
 
-static float tri_avg_z(float* v, int triIndex, int vertSize)
-{
-    int base = triIndex * 3 * vertSize;
-
-    float z0 = v[base + 2];
-    float z1 = v[base + vertSize + 2];
-    float z2 = v[base + 2 * vertSize + 2];
-
-    return (z0 + z1 + z2) / 3.0f;
-}
-
-static void swapTri(float* v, int a, int b, int vertSize)
-{
-    if (a == b) return;
-
-    int triSize = 3 * vertSize;
-
-    for (int i = 0; i < triSize; i++) {
-        float tmp = v[a * triSize + i];
-        v[a * triSize + i] = v[b * triSize + i];
-        v[b * triSize + i] = tmp;
-    }
-}
-
-static int partition(float* v, int low, int high, int vertSize)
-{
-    float pivot = tri_avg_z(v, high, vertSize);
-    int i = low - 1;
-
-    for (int j = low; j < high; j++) {
-        if (tri_avg_z(v, j, vertSize) > pivot) {
-            i++;
-            swapTri(v, i, j, vertSize);
-        }
-    }
-
-    swapTri(v, i + 1, high, vertSize);
-    return i + 1;
-}
-
-static void quicksort(float* v, int low, int high, int vertSize)
-{
-    if (low < high) {
-        int pi = partition(v, low, high, vertSize);
-        quicksort(v, low, pi - 1, vertSize);
-        quicksort(v, pi + 1, high, vertSize);
-    }
-}
-
-void sort(float* vertexes, int vertCount, int vertSize)
-{
-    if (!vertexes || vertCount < 3) return;
-
-    int triCount = vertCount / 3;
-    quicksort(vertexes, 0, triCount - 1, vertSize);
-}
 
 int main() {
     dumpFileList("assets/pak0.pak");
-    TQ2Model* model = loadModel("assets/pak0.pak", "models/monsters/gunner/tris.md2");
 
-    TQ2ModelFrame* modelFrame = allocateFrame(model);
-    TQ2ModelFrame* modelProjectedFrame = allocateFrame(model);
-
-    auto animationList = buildAnimationList(model);
+    TEnemyAsset* enemyAsset = loadEnemyAsset(enemyPakDefinition + GUNNER);
+    TEnemy* enemy = createEnemy(enemyAsset);
 
     int index = 0;
     while(gunnerSounds[index]) {
@@ -201,12 +143,11 @@ int main() {
     unsigned int start = SDL_GetTicks();
 
 //    Image* texture = generateTexture(RGB565(255, 0, 0), RGB565(0, 0, 255));
-    Image* texture = loadPCX("assets/pak0.pak", "models/monsters/gunner/skin.pcx");
-
-    int modelProgress = 0;
-    int speed = 30;
+//    Image* texture = loadPCX("assets/pak0.pak", "models/monsters/gunner/skin.pcx");
 
     int soundIndex = 0;
+
+    play(sounds[0]);
 
     while (!quit) {
         SDL_Event ev;
@@ -217,9 +158,33 @@ int main() {
 
             if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_1) {
                 printf("sound %d\n", soundIndex);
-                for(int j = 0; j<5; j++) play(sounds[soundIndex]);
+                play(sounds[soundIndex]);
                 soundIndex++;
                 if (sounds[soundIndex] == nullptr) soundIndex = 0;
+            }
+
+            if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_2) {
+                enemy->isHurt = !enemy->isHurt;
+            }
+
+            if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_3) {
+                enemy->animationNo++;
+                if (enemy->animationNo >= enemy->asset->animList->animCount) {
+                    enemy->animationNo = 0;
+                }
+                enemy->modelProgress = enemy->asset->animList->anim[enemy->animationNo].startFrame * enemy->speed;
+
+                if (strncmp("death", enemy->asset->animList->anim[enemy->animationNo].name, 5) == 0) {
+                    play(sounds[0]);
+                }
+
+                if (strncmp("pain", enemy->asset->animList->anim[enemy->animationNo].name, 4) == 0) {
+                    play(sounds[5 + rand()%2]);
+                }
+
+                if (strncmp("attak", enemy->asset->animList->anim[enemy->animationNo].name, 5) == 0) {
+                    play(sounds[1 + rand()%3]);
+                }
             }
 
 //            handleKeyEvents(ev);
@@ -237,49 +202,20 @@ int main() {
         lock(screen);
 
         clear(screen);
-        modelProgress++;
-//        modelProgress = 200;
-        modelProgress = modelProgress % (model->frameCount * speed);
-        int modelCurrentFrame = (modelProgress/speed);
-        int modelNextFrame = (modelCurrentFrame + 1) % model->frameCount;
-        getTModel(*model, *modelFrame, modelCurrentFrame, modelNextFrame, (float)(modelProgress % speed) / speed);
+
+        updateAnim(enemy, dt * 200);
+
         Matrix projection, shift, scale, rotY;
         projection.basicProjection(256, screen.w, screen.h);
         scale.setScale(0.3f);
         rotY.setRotationY(4 * 3.14/5);
-        shift.setTransform(0, 0, 15);
+        shift.setTransform(0, 0, 13);
 
         Matrix composition = projection * shift * scale * rotY;
-        composition.mul(
-                (float*)modelFrame->vertexes,
-                (float*)modelProjectedFrame->vertexes,
-                modelFrame->vertCount,
-                6);
 
-        sort((float*)modelProjectedFrame->vertexes, modelFrame->vertCount, 6);
+        transform(enemy, &composition);
 
-        for(int i = 0; i<modelFrame->trisCount; i++) {
-            TexTrianglePoint texTrianglePoint[3] = {
-                    {
-                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
-                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
-                            modelProjectedFrame->vertexes[i * 3 + 0].u, modelProjectedFrame->vertexes[i * 3 + 0].v
-                    },
-                    {
-                            (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
-                            (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
-                            modelProjectedFrame->vertexes[i * 3 + 1].u, modelProjectedFrame->vertexes[i * 3 + 1].v
-                    },
-                    {
-                            (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
-                            (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
-                            modelProjectedFrame->vertexes[i * 3 + 2].u, modelProjectedFrame->vertexes[i * 3 + 2].v
-                    }
-
-            };
-            screen.image->drawTexTriangle(texture, texTrianglePoint, sizeof(TexTrianglePoint));
-//            screen.image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
-        }
+        draw(screen.image, enemy);
 
         unlock(screen);
 
@@ -290,7 +226,7 @@ int main() {
 
         char str[256];
 
-        sprintf(str, "FPS: %5.2lf, tris %d", (1000.0 * frames / (SDL_GetTicks() - start)), modelFrame->trisCount);
+        sprintf(str, "FPS: %5.2lf, tris %d", (1000.0 * frames / (SDL_GetTicks() - start)), enemy->modelFrame->trisCount);
 
         if (*str && (frames % 200) == 0) {
 //            std::cout<<str<<std::endl;

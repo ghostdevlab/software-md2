@@ -8,6 +8,8 @@
 
 #include "Q2Model.h"
 #include "Q2Anim.h"
+#include "Image.h"
+#include "Matrix.h"
 
 typedef struct EnemyPakDefinition {
     char modelName[64];
@@ -16,11 +18,33 @@ typedef struct EnemyPakDefinition {
     char* sounds[15];
 } TEnemyPakDefinition;
 
-typedef struct Enemy {
+typedef struct {
     TQ2Model* model;
+    Image* skin;
+    Image* pain;
     TQ2AnimList* animList;
+} TEnemyAsset;
+
+typedef struct {
+    TEnemyAsset* asset;
+    int isHurt;
+
+    int animationNo;
+    float modelProgress;
+    int speed;
+
+    TQ2ModelFrame* modelFrame;
+    TQ2ModelFrame* modelProjectedFrame;
 } TEnemy;
 
-TEnemy* loadEnemy(EnemyPakDefinition* enemy);
+#define GUNNER 0
+
+extern EnemyPakDefinition enemyPakDefinition[];
+
+TEnemyAsset* loadEnemyAsset(EnemyPakDefinition* enemyDef);
+TEnemy *createEnemy(TEnemyAsset* enemyAsset);
+void updateAnim(TEnemy* enemy, float dt);
+void transform(TEnemy* enemy, Matrix *matrix);
+void draw(Image* image, TEnemy* enemy);
 
 #endif //MD2_ENEMY_H
