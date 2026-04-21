@@ -22,7 +22,11 @@ add_executable(md2
         Pak.cpp
         main.cpp
         Pak.cpp
-        Pak.h)
+        Pak.h
+        Enemy.cpp
+        Enemy.h
+        Q2Anim.cpp
+        Q2Anim.h)
 
 target_link_libraries(md2 ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} -lSDL2_image)
 #target_link_libraries(md2 ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} SDL2_image::SDL2_image)

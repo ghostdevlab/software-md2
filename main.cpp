@@ -4,6 +4,7 @@
 #include "Image.h"
 #include "Pak.h"
 #include "Matrix.h"
+#include "Q2Anim.h"
 
 typedef struct Screen {
     SDL_Window *window;
@@ -107,12 +108,71 @@ char *gunnerSounds[10] = {
 
 WavFile* sounds[10];
 
+static float tri_avg_z(float* v, int triIndex, int vertSize)
+{
+    int base = triIndex * 3 * vertSize;
+
+    float z0 = v[base + 2];
+    float z1 = v[base + vertSize + 2];
+    float z2 = v[base + 2 * vertSize + 2];
+
+    return (z0 + z1 + z2) / 3.0f;
+}
+
+static void swapTri(float* v, int a, int b, int vertSize)
+{
+    if (a == b) return;
+
+    int triSize = 3 * vertSize;
+
+    for (int i = 0; i < triSize; i++) {
+        float tmp = v[a * triSize + i];
+        v[a * triSize + i] = v[b * triSize + i];
+        v[b * triSize + i] = tmp;
+    }
+}
+
+static int partition(float* v, int low, int high, int vertSize)
+{
+    float pivot = tri_avg_z(v, high, vertSize);
+    int i = low - 1;
+
+    for (int j = low; j < high; j++) {
+        if (tri_avg_z(v, j, vertSize) > pivot) {
+            i++;
+            swapTri(v, i, j, vertSize);
+        }
+    }
+
+    swapTri(v, i + 1, high, vertSize);
+    return i + 1;
+}
+
+static void quicksort(float* v, int low, int high, int vertSize)
+{
+    if (low < high) {
+        int pi = partition(v, low, high, vertSize);
+        quicksort(v, low, pi - 1, vertSize);
+        quicksort(v, pi + 1, high, vertSize);
+    }
+}
+
+void sort(float* vertexes, int vertCount, int vertSize)
+{
+    if (!vertexes || vertCount < 3) return;
+
+    int triCount = vertCount / 3;
+    quicksort(vertexes, 0, triCount - 1, vertSize);
+}
+
 int main() {
     dumpFileList("assets/pak0.pak");
     TQ2Model* model = loadModel("assets/pak0.pak", "models/monsters/gunner/tris.md2");
 
     TQ2ModelFrame* modelFrame = allocateFrame(model);
     TQ2ModelFrame* modelProjectedFrame = allocateFrame(model);
+
+    auto animationList = buildAnimationList(model);
 
     int index = 0;
     while(gunnerSounds[index]) {
@@ -193,6 +253,8 @@ int main() {
                 (float*)modelProjectedFrame->vertexes,
                 modelFrame->vertCount,
                 6);
+
+        sort((float*)modelProjectedFrame->vertexes, modelFrame->vertCount, 6);
 
         for(int i = 0; i<modelFrame->trisCount; i++) {
             TexTrianglePoint texTrianglePoint[3] = {
