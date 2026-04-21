@@ -60,6 +60,10 @@ void clear(TScreen& screen) {
 //    resetZBuf(screen.zBuf);
 }
 
+#ifdef main
+#undef main
+#endif
+
 int main() {
     TScreen screen;
 #ifdef DEBUG
@@ -110,7 +114,7 @@ int main() {
             };
 
 
-            screen.image->drawGouraudTriangle(trianglePoint, sizeof(FlatTrianglePoint));
+            screen.image->drawGouraudTriangle(trianglePoint, sizeof(GouraudTrianglePoint ));
         }
 
         unlock(screen);

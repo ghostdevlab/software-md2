@@ -153,6 +153,49 @@ void Image::hLineFlat(int x1, int y, int x2, uint16_t color) {
 
 }
 
+void Image::hLineGouraud(int x1, int y, int x2, int_fast32_t *lColor, int_fast32_t *rColor) {
+    if (x2 < 0) return;
+    if (x1 >= width) return;
+
+    int w = (x2 - x1 + 1);
+
+    if (x1 < 0) {
+        x1 = 0;
+    }
+
+    if (x2>= width) {
+        x2 = width - 1;
+    }
+
+    uint16_t* buf = (uint16_t*)buffer + y * width + x1;
+
+    int_fast32_t dColor[3] = {
+            (rColor[0] - lColor[0]) / w,
+            (rColor[1] - lColor[1]) / w,
+            (rColor[2] - lColor[2]) / w,
+    };
+
+    int_fast32_t c[3] = {
+            lColor[0],
+            lColor[1],
+            lColor[2]
+    };
+
+    for (int x = x1; x<=x2; x++, buf++){
+        uint32_t r = (c[0] >> 16) & 0xFF;
+        uint32_t g = (c[1] >> 16) & 0xFF;
+        uint32_t b = (c[2] >> 16) & 0xFF;
+
+        uint16_t  color = (r << 11) | (g << 5) | b;
+
+        (*buf) = color;
+
+        c[0] += dColor[0];
+        c[1] += dColor[1];
+        c[2] += dColor[2];
+    }
+}
+
 void Image::drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color) {
     FlatTrianglePoint *p0 = points;
     FlatTrianglePoint *p1 = (FlatTrianglePoint *) shiftBytes(points, pointSize);
@@ -263,27 +306,27 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
         auto rx = (float) p0->x;
 
         int_fast32_t lColor[3] = {
-                (((p0->color) >> 11) & 31) << 8,
-                (((p0->color) >> 5) & 63) << 8,
-                ((p0->color) & 31) << 8
+                (((p0->color) >> 11) & 31) << 16,
+                (((p0->color) >> 5) & 63) << 16,
+                ((p0->color) & 31) << 16
         };
 
         int_fast32_t rColor[3] = {
-                (((p0->color) >> 11) & 31) << 8,
-                (((p0->color) >> 5) & 63) << 8,
-                ((p0->color) & 31) << 8
+                (((p0->color) >> 11) & 31) << 16,
+                (((p0->color) >> 5) & 63) << 16,
+                ((p0->color) & 31) << 16
         };
 
         int_fast32_t dC1[3] = {
-                (((((p1->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 8) / (p1->y - p0->y + 1),
-                (((((p1->color) >> 5) & 63) - (((p0->color) >> 11) & 31)) << 8) / (p1->y - p0->y + 1),
-                ((((p1->color) & 31) - (((p0->color) >> 11) & 31)) << 8) / (p1->y - p0->y + 1),
+                (((((p1->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p1->y - p0->y + 1),
+                (((((p1->color) >> 5) & 63) - (((p0->color) >> 5) & 31)) << 16) / (p1->y - p0->y + 1),
+                ((((p1->color) & 31) - (((p0->color)) & 31)) << 16) / (p1->y - p0->y + 1),
         };
 
         int_fast32_t dC2[3] = {
-                (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 8) / (p2->y - p0->y + 1),
-                (((((p2->color) >> 5) & 63) - (((p0->color) >> 11) & 31)) << 8) / (p2->y - p0->y + 1),
-                ((((p2->color) & 31) - (((p0->color) >> 11) & 31)) << 8) / (p1->y - p2->y + 1),
+                (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p2->y - p0->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 31)) << 16) / (p2->y - p0->y + 1),
+                ((((p2->color) & 31) - (((p0->color)) & 31)) << 16) / (p2->y - p0->y + 1),
         };
 
         auto dx1 = (float) (p1->x - p0->x) / (p1->y - p0->y + 1);
@@ -303,6 +346,15 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
         if (sy < 0) {
             lx -= dx1 * sy;
             rx -= dx2 * sy;
+
+            lColor[0] -= ptr_dC1[0] * sy;
+            lColor[1] -= ptr_dC1[1] * sy;
+            lColor[2] -= ptr_dC1[2] * sy;
+
+            rColor[0] -= ptr_dC2[0] * sy;
+            rColor[1] -= ptr_dC2[1] * sy;
+            rColor[2] -= ptr_dC2[2] * sy;
+
             sy = 0;
         }
 
@@ -311,9 +363,17 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
         }
 
         for (int i = 0; i < ey - sy + 1; i++) {
-//            hLineFlat((int) (lx), sy + i, (int) (rx), color);
+            hLineGouraud((int) (lx), sy + i, (int) (rx), lColor, rColor);
             lx += dx1;
             rx += dx2;
+
+            lColor[0] += ptr_dC1[0];
+            lColor[1] += ptr_dC1[1];
+            lColor[2] += ptr_dC1[2];
+
+            rColor[0] += ptr_dC2[0];
+            rColor[1] += ptr_dC2[1];
+            rColor[2] += ptr_dC2[2];
         }
     }
 
@@ -322,11 +382,40 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
         auto dx1 = (float)(p2->x - p1->x) / (p2->y - p1->y + 1);  // 2 -> 3
         auto dx2 = (float)(p2->x - p0->x) / (p2->y - p0->y + 1);  // 1 -> 3
 
+        int_fast32_t dC1[3] = {
+                (((((p2->color) >> 11) & 31) - (((p1->color) >> 11) & 31)) << 16) / (p2->y - p1->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p1->color) >> 5) & 31)) << 16) / (p2->y - p1->y + 1),
+                ((((p2->color) & 31) - (((p1->color)) & 31)) << 16) / (p2->y - p1->y + 1),
+        };
+
+        int_fast32_t dC2[3] = {
+                (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p2->y - p0->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 31)) << 16) / (p2->y - p0->y + 1),
+                ((((p2->color) & 31) - (((p0->color)) & 31)) << 16) / (p2->y - p0->y + 1),
+        };
+
+
         auto rx = (float)(p0->x) + (p1->y - p0->y + 1) * dx2;
         auto lx = (float)(p1->x);
 
+        int_fast32_t lColor[3] = {
+                (((p1->color) >> 11) & 31) << 16,
+                (((p1->color) >> 5) & 63) << 16,
+                ((p1->color) & 31) << 16
+        };
+
+        int_fast32_t rColor[3] = {
+                ((((p0->color) >> 11) & 31) << 16) + (p1->y - p0->y + 1) * dC2[0],
+                ((((p0->color) >> 5) & 63) << 16) + (p1->y - p0->y + 1) * dC2[1],
+                (((p0->color) & 31) << 16) + (p1->y - p0->y + 1) * dC2[2]
+        };
+
+        int_fast32_t* ptr_dC1 = dC1;
+        int_fast32_t* ptr_dC2 = dC2;
+
         if (lx > rx) {
             swap(lx, rx);
+            swap(ptr_dC1, ptr_dC2);
         }
 
         int sy = p1->y;
@@ -335,6 +424,17 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
         if (sy < 0) {
             lx -= dx1 * sy;
             rx -= dx2 * sy;
+
+
+            lColor[0] -= ptr_dC1[0] * sy;
+            lColor[1] -= ptr_dC1[1] * sy;
+            lColor[2] -= ptr_dC1[2] * sy;
+
+            rColor[0] -= ptr_dC2[0] * sy;
+            rColor[1] -= ptr_dC2[1] * sy;
+            rColor[2] -= ptr_dC2[2] * sy;
+
+
             sy = 0;
         }
 
@@ -343,9 +443,18 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
         }
 
         for(int i=0; i<ey - sy + 1; i++) {
-//            hLineFlat((int)(lx), sy + i, (int)(rx), color);
+            hLineGouraud((int) (lx), sy + i, (int) (rx), lColor, rColor);
             lx += dx1;
             rx += dx2;
+
+
+            lColor[0] += ptr_dC1[0];
+            lColor[1] += ptr_dC1[1];
+            lColor[2] += ptr_dC1[2];
+
+            rColor[0] += ptr_dC2[0];
+            rColor[1] += ptr_dC2[1];
+            rColor[2] += ptr_dC2[2];
         }
 
     }

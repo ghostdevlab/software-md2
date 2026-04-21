@@ -1,5 +1,0 @@
-ToolSet: 3.2.0 (local)@C:\cygwin64
-Ninja: null@C:\Program Files\JetBrains\CLion 2024.1.4\bin\ninja\cygwin\x64\ninja.exe
-Options: 
-
-Options:

@@ -18,6 +18,11 @@ typedef struct {
     uint16_t color;
 } GouraudTrianglePoint;
 
+typedef struct {
+    int32_t x,y;
+    uint16_t u,v;
+} TexTrianglePoint;
+
 #pragma pack(pop)
 
 class Image {
@@ -35,9 +40,11 @@ public:
     void copyTo(Image* target);
 
     void hLineFlat(int x1, int y, int x2, uint16_t color);
+    void hLineGouraud(int x1, int y, int x2, int_fast32_t* lColor, int_fast32_t* rColor);
 
     void drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color);
     void drawGouraudTriangle(GouraudTrianglePoint* points, uint32_t pointSize);
+    void drawTexTriangle(TexTrianglePoint* points, uint32_t pointSize);
 
     ~Image();
 private:
