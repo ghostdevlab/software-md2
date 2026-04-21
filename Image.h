@@ -23,6 +23,10 @@ typedef struct {
     float u,v;
 } TexTrianglePoint;
 
+typedef struct {
+    int32_t x, y;
+} WireframePoint;
+
 #pragma pack(pop)
 
 class Image {
@@ -46,6 +50,7 @@ public:
     void drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color);
     void drawGouraudTriangle(GouraudTrianglePoint* points, uint32_t pointSize);
     void drawTexTriangle(Image* texture, TexTrianglePoint* points, uint32_t pointSize);
+    void drawWireframeTriangle(WireframePoint* points, uint32_t pointSize, uint16_t color);
 
     void fillTexture(uint16_t col1, uint16_t col2);
 

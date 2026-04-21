@@ -1,6 +1,7 @@
 #include <iostream>
 #include <SDL.h>
 #include "Image.h"
+#include "Pak.h"
 
 typedef struct Screen {
     SDL_Window *window;
@@ -65,6 +66,13 @@ void clear(TScreen& screen) {
 #endif
 
 int main() {
+//    dumpFileList("assets/pak0.pak");
+    TQ2Model* model = loadModel("assets/pak0.pak", "models/monsters/gunner/tris.md2");
+
+    TQ2ModelFrame* modelFrame = allocateFrame(model);
+
+    getTModel(*model, *modelFrame, 0, 1, 0.5f);
+
     TScreen screen;
 #ifdef DEBUG
     int debug = 1;
@@ -124,8 +132,8 @@ int main() {
                     {  20 + i, 100, 0.0f, 1.0f, },
                     { 300 + i, 500, 1.0f, 1.0f }
             };
-
-            screen.image->drawTexTriangle(texture, trianglePoint, sizeof(TexTrianglePoint ));
+//            screen.image->drawTexTriangle(texture, trianglePoint, sizeof(TexTrianglePoint ));
+//            screen.image->drawWireframeTriangle((WireframePoint*)trianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
         }
 
         unlock(screen);

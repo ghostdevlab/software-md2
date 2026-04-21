@@ -6,9 +6,10 @@
 #define ENGINE_Q2MODEL_H
 
 
-#include "Model.h"
-
 #pragma pack(push, 1)
+
+#include <cstdio>
+
 typedef struct Q2Header {
     int ident;                  /* magic number: "IDP2" */
     int version;                /* version: must be 8 */
@@ -79,10 +80,25 @@ typedef struct Q2Model {
     int frameCount;
 } TQ2Model;
 
+
+typedef struct {
+    float x, y, z, w;
+    float u, v;
+} ModelVertex;
+
 #pragma pack(pop)
 
-TQ2Model* openFile(const char* path);
+typedef struct {
+    uint32_t* triangle;
+    ModelVertex* vertexes;
+    int vertCount;
+    int trisCount;
 
-void getTModel(Q2Model& src, TModel& out, int srcFrame, int dstFrame, float progress, TDrawMemPool& tmpPool, TDrawMemPool& pool);
+    float* rawBuf;
+} TQ2ModelFrame;
+
+TQ2Model* openFile(FILE* f, long offset);
+TQ2ModelFrame* allocateFrame(TQ2Model* model);
+void getTModel(Q2Model& src, TQ2ModelFrame & out, int srcFrame, int dstFrame, float progress);
 
 #endif //ENGINE_Q2MODEL_H

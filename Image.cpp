@@ -475,8 +475,9 @@ inline int unfixF(int_fast32_t v) {
 void Image::hLineTex(Image* texture, int x1, int y, int x2, int_fast32_t* cord1, int_fast32_t* cord2) {
 //    auto buf = (unsigned short *)(i.buf + y * image.pitch);
     uint16_t* buf = (uint16_t*)buffer + y * width;
-
-    std::cout <<" line ("<<x1<<" "<<y<<" " <<cord1[0]<<" "<<cord1[1]<<" "<<cord2[0]<<" "<<cord2[1]<<std::endl;
+//
+//    std::cout <<" line ("<<x1<<" "<<y<<" " <<x2<<") attr "<<
+//        unfixF(cord1[0])<<" "<<unfixF(cord1[1])<<" "<<unfixF(cord2[0])<<" "<<unfixF(cord2[1])<<std::endl;
 
     if (x2 < 0) return;
     if (x1 >= width) return;
@@ -513,14 +514,24 @@ void Image::hLineTex(Image* texture, int x1, int y, int x2, int_fast32_t* cord1,
         int v = unfixF(c[1]);
 
 
-//        auto texLine = (unsigned short *)(texture.buf + v * texture.pitch);
-        auto texLine = texture->buffer + v * texture->width;
-
+        auto texLine = (texture->buffer + v * texture->width);
+//        buf[x] = v << 11;// v * texture->width;
+//
         buf[x] = texLine[u];
 
-        c[0] = dc[0];
-        c[1] = dc[1];
+        c[0] += dc[0];
+        c[1] += dc[1];
     }
+}
+
+void Image::drawWireframeTriangle(WireframePoint* points, uint32_t pointSize, uint16_t color) {
+    WireframePoint *p0 = points;
+    WireframePoint *p1 = (WireframePoint *) shiftBytes(points, pointSize);
+    WireframePoint *p2 = (WireframePoint *) shiftBytes(points, 2 * pointSize);
+
+    line(p0->x, p0->y, p1->x, p1->y, color);
+    line(p1->x, p1->y, p2->x, p2->y, color);
+    line(p2->x, p2->y, p0->x, p0->y, color);
 }
 
 void Image::drawTexTriangle(Image* texture, TexTrianglePoint *points, uint32_t pointSize) {
