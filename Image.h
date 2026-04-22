@@ -24,6 +24,12 @@ typedef struct {
 } TexTrianglePoint;
 
 typedef struct {
+    int32_t x,y;
+    float z;
+    float u,v;
+} TexTriangleFixPoint;
+
+typedef struct {
     int32_t x, y;
 } WireframePoint;
 
@@ -46,10 +52,13 @@ public:
     void hLineFlat(int x1, int y, int x2, uint16_t color);
     void hLineGouraud(int x1, int y, int x2, int_fast32_t* lColor, int_fast32_t* rColor);
     void hLineTex(Image* texture, int x1, int y, int x2, int_fast32_t* cord1, int_fast32_t* cord2);
+    void hLineTexFix(Image* texture, int x1, int y, int x2, int_fast32_t* cord1, int_fast32_t* cord2, int_fast32_t lz, int_fast32_t rz);
+
 
     void drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color);
     void drawGouraudTriangle(GouraudTrianglePoint* points, uint32_t pointSize);
     void drawTexTriangle(Image* texture, TexTrianglePoint* points, uint32_t pointSize);
+    void drawTexTriangleFix(Image* texture, TexTriangleFixPoint* points, uint32_t pointSize);
     void drawWireframeTriangle(WireframePoint* points, uint32_t pointSize, uint16_t color);
 
     void fillTexture(uint16_t col1, uint16_t col2);
@@ -62,7 +71,11 @@ public:
     const int bufferOwner;
 };
 
-#define RGB565(r, g, b) ((uint16_t)(((r & 0xF8) << 8)  + ((g & 0xFC) << 3) + (b >> 3)))
+#define RGB565(r, g, b) \
+    (uint16_t)((((r) & 0xF8) << 8) | \
+               (((g) & 0xFC) << 3) | \
+               ((b) >> 3))
+
 Image *generateTexture(uint16_t col1, uint16_t col2);
 
 #endif //SOFTWARERENDERBASIC_IMAGE_H

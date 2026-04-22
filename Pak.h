@@ -5,12 +5,11 @@
 #ifndef MD2_PAK_H
 #define MD2_PAK_H
 
-#pragma pack(push, 1)
-
 #include <cstdint>
 #include "Q2Model.h"
 #include "Image.h"
 
+#pragma pack(push, 1)
 typedef struct {
     char magic[4];
     uint32_t offset;

@@ -85,7 +85,7 @@ void getTModel(Q2Model& src, TQ2ModelFrame & out, int srcFrame, int dstFrame, fl
 
     static int lastFrame = -1;
     if (lastFrame != srcFrame) {
-        printf("frame id %d %s\n", srcFrame, sFrame.name);
+//        printf("frame id %d %s\n", srcFrame, sFrame.name);
         lastFrame = srcFrame;
     }
 

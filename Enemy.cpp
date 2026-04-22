@@ -105,7 +105,72 @@ void transform(TEnemy* enemy, Matrix *matrix) {
     sort((float*)enemy->modelProjectedFrame->vertexes, enemy->modelFrame->vertCount, 6);
 }
 
-void draw(Image* image, TEnemy* enemy) {
+void drawShaded(Image* image, TEnemy* enemy) {
+    for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
+        TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
+
+//        int u0 = (int)(modelProjectedFrame->vertexes[i * 3 + 0].u * 255);
+//        int v0 = (int)(modelProjectedFrame->vertexes[i * 3 + 0].v * 255);
+//
+//        int u1 = (int)(modelProjectedFrame->vertexes[i * 3 + 1].u * 255);
+//        int v1 = (int)(modelProjectedFrame->vertexes[i * 3 + 1].v * 255);
+//
+//        int u2 = (int)(modelProjectedFrame->vertexes[i * 3 + 2].u * 255);
+//        int v2 = (int)(modelProjectedFrame->vertexes[i * 3 + 2].v * 255);
+//
+//        uint16_t col1 = RGB565(u0, v0, 255);
+//        uint16_t col2 = RGB565(u1, v1, 255);
+//        uint16_t col3 = RGB565(u2, v2, 255);
+
+        auto c1 = (uint16_t )(255 - 10 * (modelProjectedFrame->vertexes[i * 3 + 0].z));
+        auto c2 = (uint16_t )(255 - 10 * (modelProjectedFrame->vertexes[i * 3 + 1].z));
+        auto c3 = (uint16_t )(255 - 10 * (modelProjectedFrame->vertexes[i * 3 + 2].z));
+
+//        auto avg = (c1 + c2 + c3) / 3;
+
+        uint16_t col1 = RGB565(c1, c1, c1);
+        uint16_t col2 = RGB565(c2, c2, c2);
+        uint16_t col3 = RGB565(c3, c3, c3);
+//
+
+//        col1 = RGB565(255, 0, 0);
+//        col2 = RGB565(0, 255, 0);
+//        col3 = RGB565(0, 0, 255);
+
+//        uint16_t col1 = RGB565(255, 0, 0);
+//        uint16_t col2 = RGB565(0, 255, 0);
+//        uint16_t col3 = RGB565(0, 0, 255);
+
+//        printf("z: %d  %d\n", (int)modelProjectedFrame->vertexes[i * 3 + 0].z, c1);
+
+        GouraudTrianglePoint gouraudTrianglePoint[3] = {
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        col1
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        col2
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        col3
+                }
+
+        };
+        image->drawGouraudTriangle(
+                gouraudTrianglePoint,
+                sizeof(GouraudTrianglePoint)
+        );
+
+//            image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
+    }
+}
+
+void drawTex(Image* image, TEnemy* enemy) {
     for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
         TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
         TexTrianglePoint texTrianglePoint[3] = {
@@ -131,6 +196,65 @@ void draw(Image* image, TEnemy* enemy) {
                 texTrianglePoint,
                 sizeof(TexTrianglePoint)
                 );
+
+//            image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
+    }
+}
+
+void drawWire(Image* image, TEnemy* enemy) {
+    for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
+        TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
+        TexTrianglePoint texTrianglePoint[3] = {
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        modelProjectedFrame->vertexes[i * 3 + 0].u, modelProjectedFrame->vertexes[i * 3 + 0].v
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        modelProjectedFrame->vertexes[i * 3 + 1].u, modelProjectedFrame->vertexes[i * 3 + 1].v
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        modelProjectedFrame->vertexes[i * 3 + 2].u, modelProjectedFrame->vertexes[i * 3 + 2].v
+                }
+
+        };
+        image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
+    }
+}
+
+void drawTexFix(Image* image, TEnemy* enemy) {
+    for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
+        TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
+        TexTriangleFixPoint texTrianglePoint[3] = {
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        modelProjectedFrame->vertexes[i * 3 + 0].z,
+                        modelProjectedFrame->vertexes[i * 3 + 0].u, modelProjectedFrame->vertexes[i * 3 + 0].v
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        modelProjectedFrame->vertexes[i * 3 + 1].z,
+                        modelProjectedFrame->vertexes[i * 3 + 1].u, modelProjectedFrame->vertexes[i * 3 + 1].v
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        modelProjectedFrame->vertexes[i * 3 + 2].z,
+                        modelProjectedFrame->vertexes[i * 3 + 2].u, modelProjectedFrame->vertexes[i * 3 + 2].v
+                }
+
+        };
+        image->drawTexTriangleFix(
+                enemy->isHurt ? enemy->asset->pain : enemy->asset->skin,
+                texTrianglePoint,
+                sizeof(TexTriangleFixPoint)
+        );
 
 //            image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
     }

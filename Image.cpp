@@ -182,11 +182,13 @@ void Image::hLineGouraud(int x1, int y, int x2, int_fast32_t *lColor, int_fast32
     };
 
     for (int x = x1; x<=x2; x++, buf++){
-        uint32_t r = (c[0] >> 16) & 0xFF;
-        uint32_t g = (c[1] >> 16) & 0xFF;
-        uint32_t b = (c[2] >> 16) & 0xFF;
+        uint32_t r = (c[0] >> 16);
+        uint32_t g = (c[1] >> 16);
+        uint32_t b = (c[2] >> 16);
 
-        uint16_t  color = (r << 11) | (g << 5) | b;
+//        printf("RGB : %d %d %d\n", c[0], c[1], c[2]);
+
+        uint16_t  color = (r << 11) | (g << 5) | (b);
 
         (*buf) = color;
 
@@ -319,13 +321,13 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
 
         int_fast32_t dC1[3] = {
                 (((((p1->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p1->y - p0->y + 1),
-                (((((p1->color) >> 5) & 63) - (((p0->color) >> 5) & 31)) << 16) / (p1->y - p0->y + 1),
+                (((((p1->color) >> 5) & 63) - (((p0->color) >> 5) & 63)) << 16) / (p1->y - p0->y + 1),
                 ((((p1->color) & 31) - (((p0->color)) & 31)) << 16) / (p1->y - p0->y + 1),
         };
 
         int_fast32_t dC2[3] = {
                 (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p2->y - p0->y + 1),
-                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 31)) << 16) / (p2->y - p0->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 63)) << 16) / (p2->y - p0->y + 1),
                 ((((p2->color) & 31) - (((p0->color)) & 31)) << 16) / (p2->y - p0->y + 1),
         };
 
@@ -384,13 +386,13 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
 
         int_fast32_t dC1[3] = {
                 (((((p2->color) >> 11) & 31) - (((p1->color) >> 11) & 31)) << 16) / (p2->y - p1->y + 1),
-                (((((p2->color) >> 5) & 63) - (((p1->color) >> 5) & 31)) << 16) / (p2->y - p1->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p1->color) >> 5) & 63)) << 16) / (p2->y - p1->y + 1),
                 ((((p2->color) & 31) - (((p1->color)) & 31)) << 16) / (p2->y - p1->y + 1),
         };
 
         int_fast32_t dC2[3] = {
                 (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p2->y - p0->y + 1),
-                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 31)) << 16) / (p2->y - p0->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 63)) << 16) / (p2->y - p0->y + 1),
                 ((((p2->color) & 31) - (((p0->color)) & 31)) << 16) / (p2->y - p0->y + 1),
         };
 
@@ -415,7 +417,11 @@ void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize
 
         if (lx > rx) {
             swap(lx, rx);
+            swap(dx1, dx2);
             swap(ptr_dC1, ptr_dC2);
+            swap(lColor[0], rColor[0]);
+            swap(lColor[1], rColor[1]);
+            swap(lColor[2], rColor[2]);
         }
 
         int sy = p1->y;
@@ -662,6 +668,8 @@ void Image::drawTexTriangle(Image* texture, TexTrianglePoint *points, uint32_t p
         if (lx > rx) {
             swap(lx, rx);
             swap(dx1, dx2);
+            swap(lc[0], rc[0]);
+            swap(lc[1], rc[1]);
             swap(ptr_dc1, ptr_dc2);
         }
 
@@ -715,4 +723,247 @@ Image *generateTexture(uint16_t col1, uint16_t col2) {
     tex->fillTexture(col1, col2);
 
     return tex;
+}
+
+void Image::hLineTexFix(Image* texture, int x1, int y, int x2, int_fast32_t* cord1, int_fast32_t* cord2, int_fast32_t lz, int_fast32_t rz) {
+    auto buf = (buffer + y * width);
+
+    if (x2 < 0) return;
+    if (x1 >= width) return;
+
+//    if (y < 0 || y >= image.h) {
+//        SDL_Log("ERROR ACCESS %d", y);
+//        return;
+//    }
+
+    int w = (x2 - x1 + 1);
+
+    int_fast32_t dc[2] = {
+            (cord2[0] - cord1[0]) / w,
+            (cord2[1] - cord1[1]) / w
+    };
+
+    int_fast32_t c[2] = {
+            (cord1[0]),
+            (cord1[1]),
+    };
+
+    int_fast32_t dz = (rz - lz) / w;
+    int_fast32_t z = lz;
+
+    if (x1 < 0) {
+        c[0] -= x1 * dc[0];
+        c[1] -= x1 * dc[1];
+        z -= x1 * dz;
+        x1 = 0;
+    }
+
+    if (x2>= width) {
+        x2 = width - 1;
+    }
+
+    for (int x = x1; x<=x2; x++){
+        float zz = 1.0f/z;
+
+        int u = c[0] * zz;
+        int v = c[1] * zz;
+
+        auto texLine = texture->buffer + v * texture->width;
+
+        buf[x] = texLine[u];
+
+        c[0] += dc[0];
+        c[1] += dc[1];
+
+        z += dz;
+    }
+}
+
+
+void Image::drawTexTriangleFix(Image* texture, TexTriangleFixPoint *points, uint32_t pointSize) {
+    TexTriangleFixPoint *p0 = points;
+    TexTriangleFixPoint *p1 = (TexTriangleFixPoint *) shiftBytes(points, pointSize);
+    TexTriangleFixPoint *p2 = (TexTriangleFixPoint *) shiftBytes(points, 2 * pointSize);
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p1->y > p2->y) {
+        swap(p1, p2);
+    }
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p2->y <= 0) return;
+    if (p0->y >= height) return;
+
+    int_fast32_t unwrap0[2] = { (int_fast32_t)(p0->u * (texture->width - 1)), (int_fast32_t)(p0->v * (texture->height - 1)) };
+    int_fast32_t unwrap1[2] = { (int_fast32_t)(p1->u * (texture->width - 1)), (int_fast32_t)(p1->v * (texture->height - 1)) };
+    int_fast32_t unwrap2[2] = { (int_fast32_t)(p2->u * (texture->width - 1)), (int_fast32_t)(p2->v * (texture->height - 1)) };
+
+
+    if (p0->y <= p1->y && p1->y > 0) {
+        int_fast32_t lx = toFixedF(p0->x);
+        int_fast32_t rx = toFixedF(p0->x);
+
+        int_fast32_t lz = toFixedFloat(1.0f/p0->z);
+        int_fast32_t rz = toFixedFloat(1.0f/p0->z);
+
+        int_fast32_t lc[2] = {
+                toFixedFloat((float)unwrap0[0]/p0->z),
+                toFixedFloat((float)unwrap0[1]/p0->z)
+        };
+
+        int_fast32_t rc[2] = {
+                toFixedFloat((float)unwrap0[0]/p0->z),
+                toFixedFloat((float)unwrap0[1]/p0->z)
+        };
+
+        int_fast32_t dx1 = toFixedF(p1->x - p0->x) / (p1->y - p0->y + 1);
+        int_fast32_t dz1 = toFixedFloat(1.0f/p1->z - 1.0f/p0->z) / (p1->y - p0->y + 1);
+
+        int_fast32_t dc1[2] = {
+                toFixedFloat(unwrap1[0]/p1->z - unwrap0[0]/p0->z) / (p1->y - p0->y + 1),
+                toFixedFloat(unwrap1[1]/p1->z - unwrap0[1]/p0->z) / (p1->y - p0->y + 1),
+        };
+
+
+        int_fast32_t dx2 = toFixedF(p2->x - p0->x) / (p2->y - p0->y + 1);
+        int_fast32_t dz2 = toFixedFloat(1.0f/p2->z - 1.0f/p0->z) / (p2->y - p0->y + 1);
+
+        int_fast32_t dc2[2] = {
+                toFixedFloat(unwrap2[0]/p2->z - unwrap0[0]/p0->z) / (p2->y - p0->y + 1),
+                toFixedFloat(unwrap2[1]/p2->z - unwrap0[1]/p0->z) / (p2->y - p0->y + 1),
+        };
+
+        int_fast32_t *p_dc1 = dc1;
+        int_fast32_t *p_dc2 = dc2;
+
+        if (dx1 > dx2) {
+            swap(dx1, dx2);
+            swap(dz1, dz2);
+            swap(p_dc1, p_dc2);
+        }
+
+        int sy = p0->y;
+        int ey = p1->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+            lz -= dz1 * sy;
+            rz -= dz2 * sy;
+            lc[0] -= p_dc1[0] * sy;
+            lc[1] -= p_dc1[1] * sy;
+            rc[0] -= p_dc2[0] * sy;
+            rc[1] -= p_dc2[1] * sy;
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for (int i = 0; i < ey - sy + 1; i++) {
+            hLineTexFix(texture, (int)unfixF(lx), sy + i, (int)unfixF(rx), (lc), (rc), lz, rz);
+            lx += dx1;
+            rx += dx2;
+
+            lz += dz1;
+            rz += dz2;
+
+            lc[0] += p_dc1[0];
+            lc[1] += p_dc1[1];
+            rc[0] += p_dc2[0];
+            rc[1] += p_dc2[1];
+
+        }
+    }
+
+
+    if (p1->y <= p2->y && p2->y > 0) {
+        int_fast32_t dx1 = toFixedF(p2->x - p1->x) / (p2->y - p1->y + 1);  // 2 -> 3
+        int_fast32_t dx2 = toFixedF(p2->x - p0->x) / (p2->y - p0->y + 1);  // 1 -> 3
+
+        int_fast32_t dz1 = toFixedFloat(1.0f/p2->z - 1.0f/p1->z) / (p2->y - p1->y + 1);  // 2 -> 3
+        int_fast32_t dz2 = toFixedFloat(1.0f/p2->z - 1.0f/p0->z) / (p2->y - p0->y + 1);  // 1 -> 3
+
+        int_fast32_t dc1[2] = {
+                toFixedFloat(unwrap2[0]/p2->z - unwrap1[0]/p1->z) / (p2->y - p1->y + 1),
+                toFixedFloat(unwrap2[1]/p2->z - unwrap1[1]/p1->z) / (p2->y - p1->y + 1)
+        };
+
+        int_fast32_t dc2[2] = {
+                toFixedFloat(unwrap2[0]/p2->z - unwrap0[0]/p0->z) / (p2->y - p0->y + 1),
+                toFixedFloat(unwrap2[1]/p2->z - unwrap0[1]/p0->z) / (p2->y - p0->y + 1)
+        };
+
+
+        int_fast32_t rx = toFixedF(p0->x) + (p1->y - p0->y + 1) * dx2;
+        int_fast32_t lx = toFixedF(p1->x);
+
+        int_fast32_t rz = toFixedFloat(1.0f/p0->z) + (p1->y - p0->y + 1) * dz2;
+        int_fast32_t lz = toFixedFloat(1.0f/p1->z);
+
+
+        int_fast32_t rc[2] = {
+                toFixedFloat(unwrap0[0]/p0->z) + (p1->y - p0->y + 1) * dc2[0],
+                toFixedFloat(unwrap0[1]/p0->z) + (p1->y - p0->y + 1) * dc2[1]
+        };
+
+        int_fast32_t lc[2] = {
+                toFixedFloat(unwrap1[0]/p1->z),
+                toFixedFloat(unwrap1[1]/p1->z)
+        };
+
+        int_fast32_t *p_dc1 = dc1;
+        int_fast32_t *p_dc2 = dc2;
+
+        if (lx > rx) {
+            swap(lx, rx);
+            swap(lz, rz);
+            swap(dz1, dz2);
+            swap(lc[0], rc[0]);
+            swap(lc[1], rc[1]);
+            swap(dx1, dx2);
+            swap(p_dc1, p_dc2);
+        }
+
+        int sy = p1->y;
+        int ey = p2->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+            lz -= dz1 * sy;
+            rz -= dz2 * sy;
+            lc[0] -= p_dc1[0] * sy;
+            lc[1] -= p_dc1[1] * sy;
+            rc[0] -= p_dc2[0] * sy;
+            rc[1] -= p_dc2[1] * sy;
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for(int i=0; i<ey - sy + 1; i++) {
+            hLineTexFix(texture, (int)unfixF(lx), sy + i, (int)unfixF(rx), (lc), (rc), lz, rz);
+            lx += dx1;
+            rx += dx2;
+
+            lz += dz1;
+            rz += dz2;
+
+            lc[0] += p_dc1[0];
+            lc[1] += p_dc1[1];
+            rc[0] += p_dc2[0];
+            rc[1] += p_dc2[1];
+        }
+
+    }
 }

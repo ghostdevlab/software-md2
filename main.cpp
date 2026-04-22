@@ -133,7 +133,7 @@ int main() {
     if (debug) {
         createWindow(screen, 1024, 576, false);
     } else {
-//        createWindow(screen, 1024, 576, true);
+//        createWindow(screen, 1024, 576, false);
         createWindow(screen, 1920, 1080, true);
     }
 
@@ -146,8 +146,9 @@ int main() {
 //    Image* texture = loadPCX("assets/pak0.pak", "models/monsters/gunner/skin.pcx");
 
     int soundIndex = 0;
+    int drawType = 0;
 
-    play(sounds[0]);
+    play(sounds[4]);
 
     while (!quit) {
         SDL_Event ev;
@@ -167,6 +168,10 @@ int main() {
                 enemy->isHurt = !enemy->isHurt;
             }
 
+            if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_4) {
+                drawType = (drawType + 1) % 3;
+            }
+
             if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_3) {
                 enemy->animationNo++;
                 if (enemy->animationNo >= enemy->asset->animList->animCount) {
@@ -182,6 +187,9 @@ int main() {
                     play(sounds[5 + rand()%2]);
                 }
 
+                if (strncmp("attak1", enemy->asset->animList->anim[enemy->animationNo].name, 6) == 0) {
+                    play(sounds[3]);
+                } else
                 if (strncmp("attak", enemy->asset->animList->anim[enemy->animationNo].name, 5) == 0) {
                     play(sounds[1 + rand()%3]);
                 }
@@ -215,7 +223,17 @@ int main() {
 
         transform(enemy, &composition);
 
-        draw(screen.image, enemy);
+        switch (drawType) {
+            case 0:
+                drawWire(screen.image, enemy);
+                break;
+            case 1:
+                drawShaded(screen.image, enemy);
+                break;
+            case 2:
+                drawTex(screen.image, enemy);
+                break;
+        }
 
         unlock(screen);
 
@@ -229,7 +247,7 @@ int main() {
         sprintf(str, "FPS: %5.2lf, tris %d", (1000.0 * frames / (SDL_GetTicks() - start)), enemy->modelFrame->trisCount);
 
         if (*str && (frames % 200) == 0) {
-//            std::cout<<str<<std::endl;
+            std::cout<<str<<std::endl;
         }
 
     }

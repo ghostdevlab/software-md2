@@ -45,6 +45,9 @@ TEnemyAsset* loadEnemyAsset(EnemyPakDefinition* enemyDef);
 TEnemy *createEnemy(TEnemyAsset* enemyAsset);
 void updateAnim(TEnemy* enemy, float dt);
 void transform(TEnemy* enemy, Matrix *matrix);
-void draw(Image* image, TEnemy* enemy);
+void drawWire(Image* image, TEnemy* enemy);
+void drawTex(Image* image, TEnemy* enemy);
+void drawTexFix(Image* image, TEnemy* enemy);
+void drawShaded(Image* image, TEnemy* enemy);
 
 #endif //MD2_ENEMY_H
