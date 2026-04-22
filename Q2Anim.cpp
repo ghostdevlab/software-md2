@@ -11,6 +11,7 @@ TQ2AnimList* buildAnimationList(TQ2Model* model) {
 
     int countUnique = 0;
     for(int i = 0; i<model->frameCount; i++) {
+        printf("FRAME NAME : %s\n", model->frames[i].name);
         int len = strlen(model->frames[i].name);
         if (strncmp(lastName, model->frames[i].name, len - 2) != 0) {
             printf("extract frame %d %s\n", i, model->frames[i].name);

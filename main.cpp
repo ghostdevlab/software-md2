@@ -94,31 +94,21 @@ void play(WavFile* wavFile) {
     }
 }
 
-char *gunnerSounds[10] = {
-        "sound/gunner/death1.wav",
-        "sound/gunner/Gunatck1.wav",
-        "sound/gunner/Gunatck2.wav",
-        "sound/gunner/Gunatck3.wav",
-        "sound/gunner/Gunidle1.wav",
-        "sound/gunner/gunpain1.wav",
-        "sound/gunner/Gunpain2.wav",
-        "sound/gunner/Gunsrch1.wav",
-        "sound/gunner/sight1.wav",
-        nullptr
-};
 
-WavFile* sounds[10];
+WavFile* sounds[20];
 
 
 int main() {
     dumpFileList("assets/pak0.pak");
 
-    TEnemyAsset* enemyAsset = loadEnemyAsset(enemyPakDefinition + GUNNER);
+    int enemyIndex = GUNNER;
+
+    TEnemyAsset* enemyAsset = loadEnemyAsset(enemyPakDefinition + enemyIndex);
     TEnemy* enemy = createEnemy(enemyAsset);
 
     int index = 0;
-    while(gunnerSounds[index]) {
-        sounds[index] = loadWav("assets/pak0.pak", gunnerSounds[index]);
+    while(enemyPakDefinition[enemyIndex].sounds[index]) {
+        sounds[index] = loadWav("assets/pak0.pak", enemyPakDefinition[enemyIndex].sounds[index]);
         index++;
     }
     sounds[index] = nullptr;

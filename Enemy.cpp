@@ -30,6 +30,28 @@ EnemyPakDefinition enemyPakDefinition[] = {
                     nullptr,
                     nullptr,
             },
+        },
+        {
+                "models/monsters/soldier/tris.md2",
+                "models/monsters/soldier/skin.pcx",
+                "models/monsters/soldier/pain.pcx",
+                {
+                        "sound/soldier/Solatck1.wav",
+                        "sound/soldier/Solatck2.wav",
+                        "sound/soldier/Solatck3.wav",
+                        "sound/soldier/SOLDETH1.wav",
+                        "sound/soldier/SOLDETH2.wav",
+                        "sound/soldier/SOLDETH3.wav",
+                        "sound/soldier/SOLIDLE1.wav",
+                        "sound/soldier/SOLPAIN1.wav",
+                        "sound/soldier/SOLPAIN2.wav",
+                        "sound/soldier/SOLPAIN3.wav",
+                        "sound/soldier/SOLSGHT1.wav",
+                        "sound/soldier/SOLSRCH1.wav",
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                },
         }
 };
 
@@ -71,23 +93,45 @@ void updateAnim(TEnemy* enemy, float dt) {
 //  enemy->modelProgress = 200;
 
     int deathAnim = 0;
+    int walk = 0;
     if (strncmp("death", enemy->asset->animList->anim[enemy->animationNo].name, 5) == 0) {
         deathAnim = 1;
     }
 
+    if (strncmp("walk", enemy->asset->animList->anim[enemy->animationNo].name, 4) == 0) {
+        walk = 1;
+    }
+
+    int walkStart = 5;
+    int walkEnd = 5;
+
     int modelCurrentFrame = (enemy->modelProgress/enemy->speed);
 
-    if (modelCurrentFrame > animationDef.endFrame) {
-        enemy->modelProgress = (deathAnim ? animationDef.endFrame : animationDef.startFrame) * enemy->speed;
-        modelCurrentFrame = deathAnim ? animationDef.endFrame : animationDef.startFrame;
+    if (modelCurrentFrame > (walk ? (animationDef.endFrame - walkEnd) : animationDef.endFrame)) {
+        int nextFrame = animationDef.startFrame;
+        if (deathAnim) {
+            nextFrame = animationDef.endFrame;
+        }
+
+        if (walk) {
+            nextFrame = animationDef.startFrame + walkStart;
+        }
+
+        enemy->modelProgress = nextFrame * enemy->speed;
+        modelCurrentFrame = nextFrame;
     }
 
     int modelNextFrame = (modelCurrentFrame + 1);
 
-    if (modelNextFrame > animationDef.endFrame) {
-        modelNextFrame = deathAnim ? animationDef.endFrame : animationDef.startFrame;
+    if (modelNextFrame > (walk ? (animationDef.endFrame - walkEnd) : animationDef.endFrame)) {
+        modelNextFrame = deathAnim? animationDef.endFrame : animationDef.startFrame;
+
+        if (walk) {
+            modelNextFrame = animationDef.startFrame + walkStart;
+        }
     }
 
+//    printf("ANIM %s %d %d\n", enemy->asset->animList->anim[enemy->animationNo].name, modelCurrentFrame, modelNextFrame);
 
     getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed);
 

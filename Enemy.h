@@ -38,6 +38,7 @@ typedef struct {
 } TEnemy;
 
 #define GUNNER 0
+#define SOLDIER 1
 
 extern EnemyPakDefinition enemyPakDefinition[];
 
