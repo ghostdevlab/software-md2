@@ -259,6 +259,7 @@ void Image::drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint
 
         if (lx > rx) {
             swap(lx, rx);
+            swap(dx1, dx2);
         }
 
         int sy = p1->y;

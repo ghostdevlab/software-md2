@@ -159,7 +159,7 @@ int main() {
             }
 
             if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_4) {
-                drawType = (drawType + 1) % 3;
+                drawType = (drawType + 1) % 6;
             }
 
             if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_3) {
@@ -218,10 +218,18 @@ int main() {
                 drawWire(screen.image, enemy);
                 break;
             case 1:
-                drawShaded(screen.image, enemy);
+                drawFlat(screen.image, enemy);
                 break;
             case 2:
+                drawFlatShaded(screen.image, enemy);
+                break;
+            case 3:
+                drawShaded(screen.image, enemy);
+                break;
+            case 4:
                 drawTex(screen.image, enemy);
+            case 5:
+                drawTexFix(screen.image, enemy);
                 break;
         }
 

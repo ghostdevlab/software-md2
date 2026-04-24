@@ -270,6 +270,56 @@ void drawWire(Image* image, TEnemy* enemy) {
     }
 }
 
+
+void drawFlat(Image* image, TEnemy* enemy) {
+    for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
+        TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
+        FlatTrianglePoint flatTrianglePoint[3] = {
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                }
+
+        };
+        image->drawFlatTriangle((FlatTrianglePoint *)flatTrianglePoint, sizeof(FlatTrianglePoint), RGB565(255, 255, 255));
+    }
+}
+
+void drawFlatShaded(Image* image, TEnemy* enemy) {
+    for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
+        TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
+        FlatTrianglePoint flatTrianglePoint[3] = {
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                }
+
+        };
+
+        uint16_t avgZ = (modelProjectedFrame->vertexes[i * 3 + 0].z + modelProjectedFrame->vertexes[i * 3 + 1].z +   modelProjectedFrame->vertexes[i * 3 + 2].z)/3;
+
+        uint16_t c = 255 - avgZ * 10;
+
+        image->drawFlatTriangle((FlatTrianglePoint *)flatTrianglePoint, sizeof(FlatTrianglePoint), RGB565(c, c, c));
+    }
+}
+
 void drawTexFix(Image* image, TEnemy* enemy) {
     for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
         TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;

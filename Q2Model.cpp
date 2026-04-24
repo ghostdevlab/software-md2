@@ -80,6 +80,7 @@ TQ2ModelFrame* allocateFrame(TQ2Model* model) {
 }
 
 void getTModel(Q2Model& src, TQ2ModelFrame & out, int srcFrame, int dstFrame, float progress) {
+//    progress = 0.0;
     TMD2Frame& sFrame = src.frames[srcFrame];
     TMD2Frame& dFrame = src.frames[dstFrame];
 
