@@ -30,6 +30,7 @@ typedef struct {
     int isHurt;
 
     int animationNo;
+    int targetAnimNo;
     float modelProgress;
     int speed;
 

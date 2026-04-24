@@ -123,8 +123,8 @@ int main() {
     if (debug) {
         createWindow(screen, 1024, 576, false);
     } else {
-//        createWindow(screen, 1024, 576, false);
-        createWindow(screen, 1920, 1080, true);
+        createWindow(screen, 1024, 576, false);
+//        createWindow(screen, 1920, 1080, true);
     }
 
     int quit = 0;
@@ -138,7 +138,9 @@ int main() {
     int soundIndex = 0;
     int drawType = 0;
 
-    play(sounds[4]);
+    play(sounds[8]);
+    int lastStep = 0;
+    float totalTime = 0.0f;
 
     while (!quit) {
         SDL_Event ev;
@@ -193,14 +195,75 @@ int main() {
         }
 
         unsigned int t2 = SDL_GetTicks();
-        float dt = (t2 - t1) / 1000.0f;
+        float dt = (float)(t2 - t1) / 1000.0f;
         t1 = t2;
         frames++;
+
+        printf("total time %5.3lf\n", totalTime);
+
+        // constant dt for video
+//        dt = 0.0055f;
+        totalTime += dt;
 
         lock(screen);
 
         clear(screen);
 
+        drawType = 4;
+
+        float animStart = 4.0f;
+
+        if (lastStep == 0 && totalTime > animStart) {
+            enemy->targetAnimNo = 0;
+            lastStep = 2;
+        }
+
+        if (lastStep == 1 && totalTime > animStart + 3.0) {
+            play(sounds[4]);
+            lastStep = 2;
+        }
+
+        if (lastStep == 2 && totalTime > animStart + 3.0) {
+            enemy->targetAnimNo = 1;
+            lastStep = 3;
+        }
+//
+//        if (lastStep == 3 && totalTime > animStart + 2.7) {
+//            play(sounds[7]);
+//            lastStep = 4;
+//        }
+//
+//        if (lastStep == 4 && dt > animStart + 4.0) {
+//            enemy->animationNo = 2;
+//            enemy->modelProgress = enemy->asset->animList[enemy->animationNo].anim->startFrame * enemy->speed;
+//            lastStep = 5;
+//        }
+//
+//        if (lastStep == 5 && totalTime > animStart + 4.2) {
+//            play(sounds[8]);
+//            lastStep = 6;
+//        }
+//
+//        if (lastStep == 6 && totalTime > animStart + 6.0) {
+//            enemy->animationNo = 7;
+//            enemy->modelProgress = enemy->asset->animList[enemy->animationNo].anim->startFrame * enemy->speed;
+//            lastStep = 7;
+//        }
+//        if (lastStep == 7 && totalTime > animStart + 6.2) {
+//            play(sounds[6]);
+//        }
+
+//        if (frames > startVideoFrame + 800) {
+//            drawType = 5;
+//        } else if (frames > startVideoFrame + 600) {
+//            drawType = 4;
+//        } else if (frames > startVideoFrame + 400) {
+//            drawType = 3;
+//        } else if (frames > startVideoFrame + 200) {
+//            drawType = 2;
+//        } else if (frames > startVideoFrame) {
+//            drawType = 1;
+//        }
         updateAnim(enemy, dt * 200);
 
         Matrix projection, shift, scale, rotY;
@@ -228,6 +291,7 @@ int main() {
                 break;
             case 4:
                 drawTex(screen.image, enemy);
+                break;
             case 5:
                 drawTexFix(screen.image, enemy);
                 break;

@@ -75,6 +75,7 @@ TEnemy* createEnemy(TEnemyAsset* enemyAsset) {
     enemy->asset = enemyAsset;
 
     enemy->animationNo = 0;
+    enemy->targetAnimNo = 0;
 
     enemy->modelFrame = allocateFrame(enemyAsset->model);
     enemy->modelProjectedFrame = allocateFrame(enemyAsset->model);
@@ -88,6 +89,8 @@ TEnemy* createEnemy(TEnemyAsset* enemyAsset) {
 void updateAnim(TEnemy* enemy, float dt) {
 
     auto animationDef = enemy->asset->animList->anim[enemy->animationNo];
+
+    int prevFrame = enemy->modelProgress/enemy->speed;
 
     enemy->modelProgress += dt;
 //  enemy->modelProgress = 200;
@@ -121,19 +124,31 @@ void updateAnim(TEnemy* enemy, float dt) {
         modelCurrentFrame = nextFrame;
     }
 
-    int modelNextFrame = (modelCurrentFrame + 1);
-
-    if (modelNextFrame > (walk ? (animationDef.endFrame - walkEnd) : animationDef.endFrame)) {
-        modelNextFrame = deathAnim? animationDef.endFrame : animationDef.startFrame;
-
-        if (walk) {
-            modelNextFrame = animationDef.startFrame + walkStart;
+    if (enemy->targetAnimNo != enemy->animationNo) {
+        int modelNextFrame = enemy->asset->animList->anim[enemy->targetAnimNo].startFrame;
+        float progress = (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed;
+        if (prevFrame != modelCurrentFrame) {
+            enemy->animationNo = enemy->targetAnimNo;
+            enemy->modelProgress = enemy->asset->animList->anim[enemy->animationNo].startFrame * enemy->speed;
         }
+        printf("Current frame %d, next frame %d - %d %5.3lf\n", modelCurrentFrame, modelNextFrame, enemy->targetAnimNo, progress);
+        getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, progress);
+    } else {
+        int modelNextFrame = (modelCurrentFrame + 1);
+
+        if (modelNextFrame > (walk ? (animationDef.endFrame - walkEnd) : animationDef.endFrame)) {
+            modelNextFrame = deathAnim ? animationDef.endFrame : animationDef.startFrame;
+
+            if (walk) {
+                modelNextFrame = animationDef.startFrame + walkStart;
+            }
+        }
+        getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed);
     }
 
 //    printf("ANIM %s %d %d\n", enemy->asset->animList->anim[enemy->animationNo].name, modelCurrentFrame, modelNextFrame);
 
-    getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed);
+
 
 }
 
