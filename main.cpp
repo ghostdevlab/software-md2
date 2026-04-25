@@ -203,7 +203,23 @@ int main() {
 
         // constant dt for video
 //        dt = 0.0055f;
+
         totalTime += dt;
+
+        static float animSpeed = 1.0f;
+
+        static float deathStartTime = 0.0f;
+
+        if (lastStep >= 9) {
+            animSpeed = 0.2f;
+            if (totalTime > deathStartTime + 0.3 && totalTime < deathStartTime + 1.5) {
+                animSpeed = 0.1f;
+            }
+            if (totalTime > deathStartTime + 1.5) {
+                animSpeed = 1.0f;
+            }
+
+        }
 
         lock(screen);
 
@@ -218,40 +234,49 @@ int main() {
             lastStep = 2;
         }
 
-        if (lastStep == 1 && totalTime > animStart + 3.0) {
-            play(sounds[4]);
-            lastStep = 2;
-        }
-
-        if (lastStep == 2 && totalTime > animStart + 3.0) {
-            enemy->targetAnimNo = 1;
+        if (lastStep == 2 && totalTime > animStart + 1.8) {
+            play(sounds[7]);
             lastStep = 3;
         }
-//
-//        if (lastStep == 3 && totalTime > animStart + 2.7) {
-//            play(sounds[7]);
-//            lastStep = 4;
-//        }
-//
-//        if (lastStep == 4 && dt > animStart + 4.0) {
-//            enemy->animationNo = 2;
-//            enemy->modelProgress = enemy->asset->animList[enemy->animationNo].anim->startFrame * enemy->speed;
-//            lastStep = 5;
-//        }
-//
-//        if (lastStep == 5 && totalTime > animStart + 4.2) {
-//            play(sounds[8]);
-//            lastStep = 6;
-//        }
-//
-//        if (lastStep == 6 && totalTime > animStart + 6.0) {
-//            enemy->animationNo = 7;
-//            enemy->modelProgress = enemy->asset->animList[enemy->animationNo].anim->startFrame * enemy->speed;
-//            lastStep = 7;
-//        }
-//        if (lastStep == 7 && totalTime > animStart + 6.2) {
-//            play(sounds[6]);
-//        }
+
+        if (lastStep == 3 && totalTime > animStart + 2.0) {
+            enemy->targetAnimNo = 1;
+            lastStep = 4;
+        }
+
+
+        if (lastStep == 4 && totalTime > animStart + 3.8) {
+            play(sounds[8]);
+            lastStep = 5;
+        }
+
+        if (lastStep == 5 && totalTime > animStart + 4.0) {
+            enemy->targetAnimNo = 2;
+            lastStep = 6;
+        }
+
+        if (lastStep == 6 && totalTime > animStart + 5.8) {
+            play(sounds[6]);
+            lastStep = 7;
+        }
+
+        if (lastStep == 7 && totalTime > animStart + 6.0) {
+            enemy->targetAnimNo = 7;
+            enemy->isHurt = 2;
+            lastStep = 8;
+        }
+
+        if (lastStep == 8 && totalTime > animStart + 7.0) {
+            enemy->targetAnimNo = 9;
+            enemy->isHurt = 2;
+            lastStep = 9;
+            deathStartTime = totalTime;
+        }
+
+        if (lastStep == 9 && totalTime > animStart + 8.5) {
+            lastStep = 10;
+            play(sounds[0]);
+        }
 
 //        if (frames > startVideoFrame + 800) {
 //            drawType = 5;
@@ -264,15 +289,40 @@ int main() {
 //        } else if (frames > startVideoFrame) {
 //            drawType = 1;
 //        }
-        updateAnim(enemy, dt * 200);
 
-        Matrix projection, shift, scale, rotY;
+        updateAnim(enemy, 250*dt * animSpeed);
+
+
+        static float camMove = 0.0f;
+        static float modelRot = 0.0f;
+
+        Matrix projection, camera, scale, rotY;
         projection.basicProjection(256, screen.w, screen.h);
+        rotY.setRotationY(4 * 3.14/5 + modelRot);
         scale.setScale(0.3f);
-        rotY.setRotationY(4 * 3.14/5);
-        shift.setTransform(0, 0, 13);
 
-        Matrix composition = projection * shift * scale * rotY;
+        static int camStep = 0;
+        if (lastStep >= 9) {
+//            camMove += dt * 0.5;
+            if (camStep == 0) {
+                modelRot += dt * 4.0f;
+            } else {
+                camMove += dt * 2.0f;
+            }
+
+            if (camMove > 1.0f) camMove = 1.0f;
+
+            if (modelRot > 3.14f * 2) {
+                modelRot = 3.14f * 2;
+                camStep = 1;
+            }
+        }
+
+        float eye[3] = { 0.0f, lastStep >= 9 ? 14.0f * camMove : 0.0f, lastStep >= 9 ? -14 + 10 * camMove : -14.0f };
+        float target[3] { 0.0f, 0.0f, 0.0f };
+        camera = lookAt(eye, target);
+
+        Matrix composition = projection * camera * scale * rotY;
 
         transform(enemy, &composition);
 
