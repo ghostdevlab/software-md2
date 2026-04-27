@@ -284,6 +284,113 @@ void Image::drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint
     }
 }
 
+void Image::drawFlatTriangleSlow(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color, float percent, int step) {
+    FlatTrianglePoint *p0 = points;
+    FlatTrianglePoint *p1 = (FlatTrianglePoint *) shiftBytes(points, pointSize);
+    FlatTrianglePoint *p2 = (FlatTrianglePoint *) shiftBytes(points, 2 * pointSize);
+
+    int lastY = p0->y + percent * (p2->y - p0->y);
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p1->y > p2->y) {
+        swap(p1, p2);
+    }
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p2->y <= 0) return;
+    if (p0->y >= height) return;
+
+    if (p0->y <= p1->y && p1->y > 0) {
+        auto lx = (float) p0->x;
+        auto rx = (float) p0->x;
+
+        auto dx1 = (float) (p1->x - p0->x) / (p1->y - p0->y + 1);
+        auto dx2 = (float) (p2->x - p0->x) / (p2->y - p0->y + 1);
+
+        if (dx1 > dx2) {
+            swap(dx1, dx2);
+        }
+
+        int sy = p0->y;
+        int ey = p1->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for (int i = 0; i + step< ey - sy + 1; i+=step) {
+            for(int k = 0; k < step; k++) {
+                hLineFlat((int) (lx), sy + i + k, (int) (rx), color);
+            }
+
+            if (sy + i > lastY) {
+                putPixel((int) (lx), sy + i + step/2, RGB565(0, 255, 0), step);
+                putPixel((int) (rx), sy + i + step/2, RGB565(0, 255, 0), step);
+                return;
+            }
+
+            lx += dx1 * step;
+            rx += dx2 * step;
+        }
+    }
+
+
+    if (p1->y <= p2->y && p2->y > 0) {
+        auto dx1 = (float)(p2->x - p1->x) / (p2->y - p1->y + 1);  // 2 -> 3
+        auto dx2 = (float)(p2->x - p0->x) / (p2->y - p0->y + 1);  // 1 -> 3
+
+        auto rx = (float)(p0->x) + (p1->y - p0->y + 1) * dx2;
+        auto lx = (float)(p1->x);
+
+        if (lx > rx) {
+            swap(lx, rx);
+            swap(dx1, dx2);
+        }
+
+        int sy = p1->y;
+        int ey = p2->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+        lx += dx1 * step;
+        for(int i=0; i + step<ey - sy + 1; i+=step) {
+            for(int k = 0; k < step; k++) {
+                hLineFlat((int)(lx), sy + i + k, (int)(rx), RGB565(0, 0, 255));
+            }
+
+            if (sy + i > lastY) {
+                putPixel((int) (lx), sy + i + step/2, RGB565(255, 255, 0), step);
+                putPixel((int) (rx), sy + i + step/2, RGB565(0, 255, 0), step);
+                return;
+            }
+
+            lx += dx1 * step;
+            rx += dx2 * step;
+
+        }
+
+    }
+}
+
 void Image::drawGouraudTriangle(GouraudTrianglePoint *points, uint32_t pointSize) {
     GouraudTrianglePoint *p0 = points;
     GouraudTrianglePoint *p1 = (GouraudTrianglePoint *) shiftBytes(points, pointSize);
@@ -541,6 +648,197 @@ void Image::drawWireframeTriangle(WireframePoint* points, uint32_t pointSize, ui
     line(p0->x, p0->y, p1->x, p1->y, color);
     line(p1->x, p1->y, p2->x, p2->y, color);
     line(p2->x, p2->y, p0->x, p0->y, color);
+}
+
+void Image::drawTexTriangleSlow(Image* texture, TexTrianglePoint* points, uint32_t pointSize, float percent, float* texOut) {
+    TexTrianglePoint *p0 = points;
+    TexTrianglePoint *p1 = (TexTrianglePoint *) shiftBytes(points, pointSize);
+    TexTrianglePoint *p2 = (TexTrianglePoint *) shiftBytes(points, 2 * pointSize);
+
+    texOut[0] = 0.0f;
+    texOut[1] = 0.0f;
+    texOut[2] = 0.0f;
+    texOut[3] = 0.0f;
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p1->y > p2->y) {
+        swap(p1, p2);
+    }
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+
+    int lastY = p0->y + (p2->y - p0->y) * percent;
+
+    if (p2->y <= 0) return;
+    if (p0->y >= height) return;
+
+    int_fast32_t unwrap0[2] = { (int_fast32_t)(p0->u * (texture->width - 1)), (int_fast32_t)(p0->v * (texture->height - 1)) };
+    int_fast32_t unwrap1[2] = { (int_fast32_t)(p1->u * (texture->width - 1)), (int_fast32_t)(p1->v * (texture->height - 1)) };
+    int_fast32_t unwrap2[2] = { (int_fast32_t)(p2->u * (texture->width - 1)), (int_fast32_t)(p2->v * (texture->height - 1)) };
+
+
+    if (p0->y <= p1->y && p1->y > 0) {
+        auto lx = (float) p0->x;
+        auto rx = (float) p0->x;
+
+        auto dx1 = (float) (p1->x - p0->x) / (p1->y - p0->y + 1);
+        auto dx2 = (float) (p2->x - p0->x) / (p2->y - p0->y + 1);
+
+        int_fast32_t lc[2] = {
+                toFixedF(unwrap0[0]),
+                toFixedF(unwrap0[1])
+        };
+
+        int_fast32_t rc[2] = {
+                toFixedF(unwrap0[0]),
+                toFixedF(unwrap0[1])
+        };
+
+        int_fast32_t dc1[2] = {
+                toFixedF(unwrap1[0] - unwrap0[0]) / (p1->y - p0->y + 1),
+                toFixedF(unwrap1[1] - unwrap0[1]) / (p1->y - p0->y + 1),
+        };
+
+        int_fast32_t dc2[2] = {
+                toFixedF(unwrap2[0] - unwrap0[0]) / (p2->y - p0->y + 1),
+                toFixedF(unwrap2[1] - unwrap0[1]) / (p2->y - p0->y + 1),
+        };
+
+        int_fast32_t *ptr_dc1 = dc1;
+        int_fast32_t *ptr_dc2 = dc2;
+
+        if (dx1 > dx2) {
+            swap(dx1, dx2);
+            swap(ptr_dc1, ptr_dc2);
+        }
+
+        int sy = p0->y;
+        int ey = p1->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+
+            lc[0] -= ptr_dc1[0] * sy;
+            lc[1] -= ptr_dc1[1] * sy;
+            rc[0] -= ptr_dc2[0] * sy;
+            rc[1] -= ptr_dc2[1] * sy;
+
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for (int i = 0; i < ey - sy + 1; i++) {
+            hLineTex(texture, (int)lx, sy + i, rx, (lc), (rc));
+
+            if (sy + i > lastY) {
+                texOut[0] = (float)unfixF(lc[0])/texture->width;
+                texOut[1] = (float)unfixF(lc[1])/texture->height;
+                texOut[2] = (float)unfixF(rc[0])/texture->width;
+                texOut[3] = (float)unfixF(rc[1])/texture->height;
+                return;
+            }
+
+            lx += dx1;
+            rx += dx2;
+
+            lc[0] += ptr_dc1[0];
+            lc[1] += ptr_dc1[1];
+            rc[0] += ptr_dc2[0];
+            rc[1] += ptr_dc2[1];
+
+        }
+    }
+
+
+    if (p1->y <= p2->y && p2->y > 0) {
+        auto dx1 = (float)(p2->x - p1->x) / (p2->y - p1->y + 1);  // 2 -> 3
+        auto dx2 = (float)(p2->x - p0->x) / (p2->y - p0->y + 1);  // 1 -> 3
+
+        int_fast32_t dc1[2] = {
+                toFixedF(unwrap2[0] - unwrap1[0]) / (p2->y - p1->y + 1),
+                toFixedF(unwrap2[1] - unwrap1[1]) / (p2->y - p1->y + 1)
+        };
+
+        int_fast32_t dc2[2] = {
+                toFixedF(unwrap2[0] - unwrap0[0]) / (p2->y - p0->y + 1),
+                toFixedF(unwrap2[1] - unwrap0[1]) / (p2->y - p0->y + 1)
+        };
+
+
+        auto rx = (float)(p0->x) + (p1->y - p0->y + 1) * dx2;
+        auto lx = (float)(p1->x);
+
+        int_fast32_t rc[2] = {
+                toFixedF(unwrap0[0]) + (p1->y - p0->y + 1) * dc2[0],
+                toFixedF(unwrap0[1]) + (p1->y - p0->y + 1) * dc2[1]
+        };
+
+        int_fast32_t lc[2] = {
+                toFixedF(unwrap1[0]),
+                toFixedF(unwrap1[1])
+        };
+
+        int_fast32_t *ptr_dc1 = dc1;
+        int_fast32_t *ptr_dc2 = dc2;
+
+        if (lx > rx) {
+            swap(lx, rx);
+            swap(dx1, dx2);
+            swap(lc[0], rc[0]);
+            swap(lc[1], rc[1]);
+            swap(ptr_dc1, ptr_dc2);
+        }
+
+        int sy = p1->y;
+        int ey = p2->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+
+            lc[0] += ptr_dc1[0] * sy;
+            lc[1] += ptr_dc1[1] * sy;
+            rc[0] += ptr_dc2[0] * sy;
+            rc[1] += ptr_dc2[1] * sy;
+
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for(int i=0; i<ey - sy + 1; i++) {
+            hLineTex(texture, (int)(lx), sy + i, (int)(rx), (lc), (rc));
+
+            if (sy + i > lastY) {
+                texOut[0] = (float)unfixF(lc[0])/texture->width;
+                texOut[1] = (float)unfixF(lc[1])/texture->height;
+                texOut[2] = (float)unfixF(rc[0])/texture->width;
+                texOut[3] = (float)unfixF(rc[1])/texture->height;
+                return;
+            }
+
+            lx += dx1;
+            rx += dx2;
+
+            lc[0] += ptr_dc1[0];
+            lc[1] += ptr_dc1[1];
+            rc[0] += ptr_dc2[0];
+            rc[1] += ptr_dc2[1];
+        }
+
+    }
 }
 
 void Image::drawTexTriangle(Image* texture, TexTrianglePoint *points, uint32_t pointSize) {

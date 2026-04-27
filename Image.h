@@ -56,8 +56,10 @@ public:
 
 
     void drawFlatTriangle(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color);
+    void drawFlatTriangleSlow(FlatTrianglePoint* points, uint32_t pointSize, uint16_t color, float percent, int step);
     void drawGouraudTriangle(GouraudTrianglePoint* points, uint32_t pointSize);
     void drawTexTriangle(Image* texture, TexTrianglePoint* points, uint32_t pointSize);
+    void drawTexTriangleSlow(Image* texture, TexTrianglePoint* points, uint32_t pointSize, float percent, float* texOut);
     void drawTexTriangleFix(Image* texture, TexTriangleFixPoint* points, uint32_t pointSize);
     void drawWireframeTriangle(WireframePoint* points, uint32_t pointSize, uint16_t color);
 
