@@ -15,7 +15,7 @@ typedef struct EnemyPakDefinition {
     char modelName[64];
     char texture[64];
     char painTexture[64];
-    char* sounds[15];
+    char* sounds[20];
 } TEnemyPakDefinition;
 
 typedef struct {
@@ -40,18 +40,22 @@ typedef struct {
 
 #define GUNNER 0
 #define SOLDIER 1
+#define TANK 2
 
 extern EnemyPakDefinition enemyPakDefinition[];
 
 TEnemyAsset* loadEnemyAsset(EnemyPakDefinition* enemyDef);
 TEnemy *createEnemy(TEnemyAsset* enemyAsset);
-void updateAnim(TEnemy* enemy, float dt);
+void updateAnim(TEnemy* enemy, float dt, int& modelNextFrame);
 void transform(TEnemy* enemy, Matrix *matrix);
+void drawPoints(Image* image, TEnemy* enemy);
 void drawFlat(Image* image, TEnemy* enemy);
 void drawFlatShaded(Image* image, TEnemy* enemy);
 void drawWire(Image* image, TEnemy* enemy);
 void drawTex(Image* image, TEnemy* enemy);
 void drawTexFix(Image* image, TEnemy* enemy);
 void drawShaded(Image* image, TEnemy* enemy);
+
+void drawInterpolations(Image* image, int32_t* points, int vertCount);
 
 #endif //MD2_ENEMY_H

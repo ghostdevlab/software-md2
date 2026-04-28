@@ -54,6 +54,9 @@ void Image::line(int x1, int y1, int x2, int y2, uint16_t color) const {
     if (x2 >= width && x1 >= width) return;
     if (y2 >= height && y1 >= height) return;
 
+    if (abs(x2 - x1) > 10000) return;
+    if (abs(y2 - y1) > 10000) return;
+
 //    std::cout<<"L "<<x1<<", "<<y1<<", "<<x2<<", "<<y2<<std::endl;
     if (abs(x1 - x2) > abs(y1 - y2)) {
         if (x2 < x1) {
@@ -386,6 +389,200 @@ void Image::drawFlatTriangleSlow(FlatTrianglePoint* points, uint32_t pointSize, 
             lx += dx1 * step;
             rx += dx2 * step;
 
+        }
+
+    }
+}
+
+void Image::drawGouraudTriangleSlow(GouraudTrianglePoint *points, uint32_t pointSize, float percent) {
+    GouraudTrianglePoint *p0 = points;
+    GouraudTrianglePoint *p1 = (GouraudTrianglePoint *) shiftBytes(points, pointSize);
+    GouraudTrianglePoint *p2 = (GouraudTrianglePoint *) shiftBytes(points, 2 * pointSize);
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p1->y > p2->y) {
+        swap(p1, p2);
+    }
+
+    if (p0->y > p1->y) {
+        swap(p0, p1);
+    }
+
+    if (p2->y <= 0) return;
+    if (p0->y >= height) return;
+
+    int lastYLine = p0->y + (p2->y - p0->y) * percent;
+
+    if (p0->y <= p1->y && p1->y > 0) {
+        auto lx = (float) p0->x;
+        auto rx = (float) p0->x;
+
+        int_fast32_t lColor[3] = {
+                (((p0->color) >> 11) & 31) << 16,
+                (((p0->color) >> 5) & 63) << 16,
+                ((p0->color) & 31) << 16
+        };
+
+        int_fast32_t rColor[3] = {
+                (((p0->color) >> 11) & 31) << 16,
+                (((p0->color) >> 5) & 63) << 16,
+                ((p0->color) & 31) << 16
+        };
+
+        int_fast32_t dC1[3] = {
+                (((((p1->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p1->y - p0->y + 1),
+                (((((p1->color) >> 5) & 63) - (((p0->color) >> 5) & 63)) << 16) / (p1->y - p0->y + 1),
+                ((((p1->color) & 31) - (((p0->color)) & 31)) << 16) / (p1->y - p0->y + 1),
+        };
+
+        int_fast32_t dC2[3] = {
+                (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p2->y - p0->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 63)) << 16) / (p2->y - p0->y + 1),
+                ((((p2->color) & 31) - (((p0->color)) & 31)) << 16) / (p2->y - p0->y + 1),
+        };
+
+        auto dx1 = (float) (p1->x - p0->x) / (p1->y - p0->y + 1);
+        auto dx2 = (float) (p2->x - p0->x) / (p2->y - p0->y + 1);
+
+        int_fast32_t* ptr_dC1 = dC1;
+        int_fast32_t* ptr_dC2 = dC2;
+
+        if (dx1 > dx2) {
+            swap(dx1, dx2);
+            swap(ptr_dC1, ptr_dC2);
+        }
+
+        int sy = p0->y;
+        int ey = p1->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+
+            lColor[0] -= ptr_dC1[0] * sy;
+            lColor[1] -= ptr_dC1[1] * sy;
+            lColor[2] -= ptr_dC1[2] * sy;
+
+            rColor[0] -= ptr_dC2[0] * sy;
+            rColor[1] -= ptr_dC2[1] * sy;
+            rColor[2] -= ptr_dC2[2] * sy;
+
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for (int i = 0; i < ey - sy + 1; i++) {
+            hLineGouraud((int) (lx), sy + i, (int) (rx), lColor, rColor);
+
+            if (sy + i > lastYLine) {
+                return;
+            }
+
+            lx += dx1;
+            rx += dx2;
+
+            lColor[0] += ptr_dC1[0];
+            lColor[1] += ptr_dC1[1];
+            lColor[2] += ptr_dC1[2];
+
+            rColor[0] += ptr_dC2[0];
+            rColor[1] += ptr_dC2[1];
+            rColor[2] += ptr_dC2[2];
+        }
+    }
+
+
+    if (p1->y <= p2->y && p2->y > 0) {
+        auto dx1 = (float)(p2->x - p1->x) / (p2->y - p1->y + 1);  // 2 -> 3
+        auto dx2 = (float)(p2->x - p0->x) / (p2->y - p0->y + 1);  // 1 -> 3
+
+        int_fast32_t dC1[3] = {
+                (((((p2->color) >> 11) & 31) - (((p1->color) >> 11) & 31)) << 16) / (p2->y - p1->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p1->color) >> 5) & 63)) << 16) / (p2->y - p1->y + 1),
+                ((((p2->color) & 31) - (((p1->color)) & 31)) << 16) / (p2->y - p1->y + 1),
+        };
+
+        int_fast32_t dC2[3] = {
+                (((((p2->color) >> 11) & 31) - (((p0->color) >> 11) & 31)) << 16) / (p2->y - p0->y + 1),
+                (((((p2->color) >> 5) & 63) - (((p0->color) >> 5) & 63)) << 16) / (p2->y - p0->y + 1),
+                ((((p2->color) & 31) - (((p0->color)) & 31)) << 16) / (p2->y - p0->y + 1),
+        };
+
+
+        auto rx = (float)(p0->x) + (p1->y - p0->y + 1) * dx2;
+        auto lx = (float)(p1->x);
+
+        int_fast32_t lColor[3] = {
+                (((p1->color) >> 11) & 31) << 16,
+                (((p1->color) >> 5) & 63) << 16,
+                ((p1->color) & 31) << 16
+        };
+
+        int_fast32_t rColor[3] = {
+                ((((p0->color) >> 11) & 31) << 16) + (p1->y - p0->y + 1) * dC2[0],
+                ((((p0->color) >> 5) & 63) << 16) + (p1->y - p0->y + 1) * dC2[1],
+                (((p0->color) & 31) << 16) + (p1->y - p0->y + 1) * dC2[2]
+        };
+
+        int_fast32_t* ptr_dC1 = dC1;
+        int_fast32_t* ptr_dC2 = dC2;
+
+        if (lx > rx) {
+            swap(lx, rx);
+            swap(dx1, dx2);
+            swap(ptr_dC1, ptr_dC2);
+            swap(lColor[0], rColor[0]);
+            swap(lColor[1], rColor[1]);
+            swap(lColor[2], rColor[2]);
+        }
+
+        int sy = p1->y;
+        int ey = p2->y;
+
+        if (sy < 0) {
+            lx -= dx1 * sy;
+            rx -= dx2 * sy;
+
+
+            lColor[0] -= ptr_dC1[0] * sy;
+            lColor[1] -= ptr_dC1[1] * sy;
+            lColor[2] -= ptr_dC1[2] * sy;
+
+            rColor[0] -= ptr_dC2[0] * sy;
+            rColor[1] -= ptr_dC2[1] * sy;
+            rColor[2] -= ptr_dC2[2] * sy;
+
+
+            sy = 0;
+        }
+
+        if (ey >= height) {
+            ey = height - 1;
+        }
+
+        for(int i=0; i<ey - sy + 1; i++) {
+            hLineGouraud((int) (lx), sy + i, (int) (rx), lColor, rColor);
+            lx += dx1;
+            rx += dx2;
+
+
+            if (sy + i > lastYLine) {
+                return;
+            }
+
+            lColor[0] += ptr_dC1[0];
+            lColor[1] += ptr_dC1[1];
+            lColor[2] += ptr_dC1[2];
+
+            rColor[0] += ptr_dC2[0];
+            rColor[1] += ptr_dC2[1];
+            rColor[2] += ptr_dC2[2];
         }
 
     }

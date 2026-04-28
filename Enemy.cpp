@@ -29,6 +29,11 @@ EnemyPakDefinition enemyPakDefinition[] = {
                     nullptr,
                     nullptr,
                     nullptr,
+                    nullptr,
+                    nullptr,
+                    nullptr,
+                    nullptr,
+                    nullptr,
             },
         },
         {
@@ -51,6 +56,38 @@ EnemyPakDefinition enemyPakDefinition[] = {
                         nullptr,
                         nullptr,
                         nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr,
+                        nullptr
+                },
+        },
+        {
+                "models/monsters/tank/tris.md2",
+                "models/monsters/tank/skin.pcx",
+                "models/monsters/tank/pain.pcx",
+                {
+                     "sound/tank/death.wav",
+                     "sound/tank/pain.wav",
+                     "sound/tank/rocket.wav",
+                     "sound/tank/sight1.wav",
+                     "sound/tank/step.wav",
+                     "sound/tank/thud.wav",
+                     "sound/tank/Tnkatck1.wav",
+                     "sound/tank/Tnkatck3.wav",
+                     "sound/tank/Tnkatck4.wav",
+                     "sound/tank/Tnkatck5.wav",
+                     "sound/tank/Tnkatk2a.wav",
+                     "sound/tank/Tnkatk2b.wav",
+                     "sound/tank/Tnkatk2c.wav",
+                     "sound/tank/Tnkatk2d.wav",
+                     "sound/tank/Tnkatk2e.wav",
+                     "sound/tank/Tnkdeth2.wav",
+                     "sound/tank/Tnkidle1.wav",
+                     "sound/tank/Tnkpain2.wav",
+                        nullptr,
+                        nullptr
                 },
         }
 };
@@ -86,7 +123,7 @@ TEnemy* createEnemy(TEnemyAsset* enemyAsset) {
     return enemy;
 }
 
-void updateAnim(TEnemy* enemy, float dt) {
+void updateAnim(TEnemy* enemy, float dt, int& modelNextFrame) {
 
     auto animationDef = enemy->asset->animList->anim[enemy->animationNo];
 
@@ -125,7 +162,7 @@ void updateAnim(TEnemy* enemy, float dt) {
     }
 
     if (enemy->targetAnimNo != enemy->animationNo) {
-        int modelNextFrame = enemy->asset->animList->anim[enemy->targetAnimNo].startFrame;
+        modelNextFrame = enemy->asset->animList->anim[enemy->targetAnimNo].startFrame;
         float progress = (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed;
         if (prevFrame != modelCurrentFrame) {
             enemy->animationNo = enemy->targetAnimNo;
@@ -134,7 +171,7 @@ void updateAnim(TEnemy* enemy, float dt) {
         printf("Current frame %d, next frame %d - %d %5.3lf\n", modelCurrentFrame, modelNextFrame, enemy->targetAnimNo, progress);
         getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, progress);
     } else {
-        int modelNextFrame = (modelCurrentFrame + 1);
+        modelNextFrame = (modelCurrentFrame + 1);
 
         if (modelNextFrame > (walk ? (animationDef.endFrame - walkEnd) : animationDef.endFrame)) {
             modelNextFrame = deathAnim ? animationDef.endFrame : animationDef.startFrame;
@@ -143,7 +180,15 @@ void updateAnim(TEnemy* enemy, float dt) {
                 modelNextFrame = animationDef.startFrame + walkStart;
             }
         }
-        getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed);
+        float percent = (float)((int)enemy->modelProgress % enemy->speed) / enemy->speed;
+
+//        modelCurrentFrame = 5;
+//        modelNextFrame =  6;
+//        percent = 0.533;
+
+        printf("Current frame %d, next frame %d - %d %5.3lf\n", modelCurrentFrame, modelNextFrame, enemy->targetAnimNo, percent);
+
+        getTModel(*enemy->asset->model, *enemy->modelFrame, modelCurrentFrame, modelNextFrame, percent);
     }
 
 //    printf("ANIM %s %d %d\n", enemy->asset->animList->anim[enemy->animationNo].name, modelCurrentFrame, modelNextFrame);
@@ -281,7 +326,50 @@ void drawWire(Image* image, TEnemy* enemy) {
                 }
 
         };
-        image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(0, 255, 0));
+        image->drawWireframeTriangle((WireframePoint*)texTrianglePoint, sizeof(TexTrianglePoint), RGB565(255, 255, 255));
+    }
+}
+
+void drawInterpolations(Image* image, int32_t* points, int vertCount) {
+    int base = vertCount * 2;
+    for(int i = 0; i<vertCount; i++) {
+        int x1 = points[i * 2 + 0];
+        int y1 = points[i * 2 + 1];
+
+        int x2 = points[base + i * 2 + 0];
+        int y2 = points[base + i * 2 + 1];
+
+//        image->line(x1, y1, x2, y2, RGB565(128, 0, 0));
+        image->putPixel(x1, y1, RGB565(255, 0, 0), 3);
+        image->putPixel(x2, y2, RGB565(0, 255, 0), 3);
+    }
+
+}
+
+void drawPoints(Image* image, TEnemy* enemy) {
+    for(int i = 0; i<enemy->modelFrame->trisCount; i++) {
+        TQ2ModelFrame* modelProjectedFrame = enemy->modelProjectedFrame;
+        TexTrianglePoint texTrianglePoint[3] = {
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 0].x / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 0].y / modelProjectedFrame->vertexes[i * 3 + 0].w),
+                        modelProjectedFrame->vertexes[i * 3 + 0].u, modelProjectedFrame->vertexes[i * 3 + 0].v
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 1].x / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 1].y / modelProjectedFrame->vertexes[i * 3 + 1].w),
+                        modelProjectedFrame->vertexes[i * 3 + 1].u, modelProjectedFrame->vertexes[i * 3 + 1].v
+                },
+                {
+                        (int32_t) (modelProjectedFrame->vertexes[i * 3 + 2].x / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        (int32_t )(modelProjectedFrame->vertexes[i * 3 + 2].y / modelProjectedFrame->vertexes[i * 3 + 2].w),
+                        modelProjectedFrame->vertexes[i * 3 + 2].u, modelProjectedFrame->vertexes[i * 3 + 2].v
+                }
+
+        };
+        for (int k = 0; k < 3; k ++) {
+            image->putPixel(texTrianglePoint[k].x, texTrianglePoint[k].y, RGB565(0, 255, 255), 3);
+        }
     }
 }
 
